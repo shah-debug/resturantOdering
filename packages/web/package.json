@@ -1,0 +1,53 @@
+{
+  "name": "@app/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api": "./src/api/index.ts",
+    "./cn": "./src/lib/cn.ts",
+    "./proxy": "./src/security/proxy.ts",
+    "./security": "./src/security/csp.ts",
+    "./system": "./src/features/system/index.ts",
+    "./testing": "./src/testing/index.tsx",
+    "./theme.css": "./src/styles/theme.css"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@app/contracts": "workspace:*",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.7.0"
+  },
+  "peerDependencies": {
+    "@reduxjs/toolkit": "^2.13.0",
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-redux": "^9.3.0"
+  },
+  "devDependencies": {
+    "@app/config-eslint": "workspace:*",
+    "@app/config-typescript": "workspace:*",
+    "@reduxjs/toolkit": "2.13.0",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.3",
+    "happy-dom": "21.0.4",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-redux": "9.3.0",
+    "typescript": "6.0.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}
