@@ -70,8 +70,8 @@ export async function createSqlTenant(client: Client): Promise<SqlTenant> {
   const insertProduct = (slug: string) =>
     insertReturningId(
       client,
-      `INSERT INTO products (id, organization_id, category_id, name, slug, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $3, now()) RETURNING id`,
+      `INSERT INTO products (id, organization_id, category_id, name, slug, status, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $3, 'PUBLISHED', now()) RETURNING id`,
       [organizationId, categoryId, slug],
     );
   const insertVariant = (productId: string, priceMinor: number) =>

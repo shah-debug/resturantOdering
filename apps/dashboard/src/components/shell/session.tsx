@@ -30,7 +30,9 @@ export function useSession(): Session {
 }
 
 function FullPage({ children }: { children: ReactNode }) {
-  return <main className="mx-auto grid min-h-dvh w-full max-w-lg content-center p-4">{children}</main>;
+  return (
+    <main className="mx-auto grid min-h-dvh w-full max-w-lg content-center p-4">{children}</main>
+  );
 }
 
 export function AuthGate({ children }: { children: ReactNode }) {

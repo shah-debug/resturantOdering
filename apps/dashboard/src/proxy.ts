@@ -11,7 +11,7 @@ export function proxy(request: NextRequest): NextResponse {
   if (loginRedirect) {
     return NextResponse.redirect(new URL(loginRedirect, request.url));
   }
-  return withContentSecurityPolicy(request);
+  return withContentSecurityPolicy(request, { imgSources: ['https:'] });
 }
 
 export const config = {

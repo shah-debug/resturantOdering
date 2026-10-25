@@ -14,7 +14,9 @@ import { SENSITIVE_RATE_LIMIT_KEY } from './modules/auth/http/decorators.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MailModule } from './modules/mail/mail.module.js';
 import { BranchesModule } from './modules/branches/branches.module.js';
+import { MenuModule } from './modules/menu/menu.module.js';
 import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
+import { StorageModule } from './modules/storage/storage.module.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
 
 @Module({
@@ -44,6 +46,8 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
     OrganizationsModule,
     BranchesModule,
     OnboardingModule,
+    StorageModule,
+    MenuModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

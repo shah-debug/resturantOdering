@@ -14,19 +14,6 @@ import {
 } from '@/testing/api-mock';
 import { MembersPage } from './members-page';
 
-const organization = {
-  id: ORGANIZATION_ID,
-  slug: 'karachi-grill',
-  name: 'Karachi Grill',
-  status: 'ACTIVE',
-  currency: 'PKR',
-  timezone: 'Asia/Karachi',
-  contactEmail: null,
-  contactPhone: null,
-  primaryColor: null,
-  createdAt: '2026-01-01T00:00:00.000Z',
-};
-
 function member(overrides: Partial<Member> & Pick<Member, 'membershipId' | 'fullName'>): Member {
   return {
     userId: '44444444-4444-4444-8444-444444444444',
@@ -65,7 +52,6 @@ function setup(
     const handled = extra?.(call);
     if (handled) return handled;
     if (call.path === '/auth/me') return jsonResponse(meFixture(role));
-    if (call.path === `/organizations/${ORGANIZATION_ID}`) return jsonResponse(organization);
     if (call.path === `/organizations/${ORGANIZATION_ID}/members` && call.method === 'GET') {
       return jsonResponse({ items, page: 1, pageSize: 20, total: items.length });
     }
@@ -164,7 +150,7 @@ describe('MembersPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'You do not have access to this organization',
     );
-    expect(screen.getByRole('link', { name: 'Back to your organizations' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Back to your restaurants' })).toHaveAttribute(
       'href',
       '/',
     );

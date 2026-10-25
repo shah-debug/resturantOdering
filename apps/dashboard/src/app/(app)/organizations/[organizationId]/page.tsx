@@ -1,10 +1,13 @@
-import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
+import { OverviewPage } from '@/features/restaurant';
 
-export default async function OrganizationPage({
+export const metadata: Metadata = { title: 'Overview' };
+
+export default async function OrganizationOverviewPage({
   params,
 }: {
   params: Promise<{ organizationId: string }>;
 }) {
   const { organizationId } = await params;
-  redirect(`/organizations/${encodeURIComponent(organizationId)}/members`);
+  return <OverviewPage organizationId={organizationId} />;
 }

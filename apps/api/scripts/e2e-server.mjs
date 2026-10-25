@@ -1,7 +1,10 @@
+import { Buffer } from 'node:buffer';
 import { readdirSync, readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import process from 'node:process';
+import { fileURLToPath, URL } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { PGlite } = require('@electric-sql/pglite');
@@ -32,6 +35,25 @@ Object.assign(process.env, {
   AUTH_RATE_LIMIT_MAX_REQUESTS: '1000',
   RATE_LIMIT_MAX_REQUESTS: '10000',
   MAIL_TRANSPORT: 'log',
+  STORAGE_DRIVER: 'local',
+  STORAGE_LOCAL_DIR: join(root, '.e2e-uploads'),
 });
+
+const loggedEmails = [];
+const writeStdout = process.stdout.write.bind(process.stdout);
+process.stdout.write = (chunk, ...rest) => {
+  const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8');
+  if (text.includes('Email to ')) {
+    loggedEmails.push(text);
+  }
+  return writeStdout(chunk, ...rest);
+};
+
+createServer((request, response) => {
+  const url = new URL(request.url ?? '/', 'http://127.0.0.1');
+  const to = url.searchParams.get('to') ?? '';
+  response.setHeader('Content-Type', 'application/json');
+  response.end(JSON.stringify(loggedEmails.filter((text) => text.includes(`Email to ${to}:`))));
+}).listen(Number(process.env.E2E_MAILBOX_PORT ?? 4199), '127.0.0.1');
 
 require(join(root, 'dist', 'main.js'));

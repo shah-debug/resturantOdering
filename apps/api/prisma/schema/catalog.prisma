@@ -1,3 +1,10 @@
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+
+  @@map("product_status")
+}
+
 model Category {
   id             String    @id @default(uuid(7)) @db.Uuid
   organizationId String    @map("organization_id") @db.Uuid
@@ -20,18 +27,20 @@ model Category {
 }
 
 model Product {
-  id             String    @id @default(uuid(7)) @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  categoryId     String    @map("category_id") @db.Uuid
-  name           String    @db.VarChar(160)
-  slug           String    @db.VarChar(120)
-  description    String?   @db.VarChar(1000)
-  imageUrl       String?   @map("image_url") @db.VarChar(2048)
-  isAvailable    Boolean   @default(true) @map("is_available")
-  sortOrder      Int       @default(0) @map("sort_order")
-  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id             String        @id @default(uuid(7)) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  categoryId     String        @map("category_id") @db.Uuid
+  name           String        @db.VarChar(160)
+  slug           String        @db.VarChar(120)
+  description    String?       @db.VarChar(1000)
+  imageUrl       String?       @map("image_url") @db.VarChar(2048)
+  imageKey       String?       @map("image_key") @db.VarChar(512)
+  status         ProductStatus @default(DRAFT)
+  isAvailable    Boolean       @default(true) @map("is_available")
+  sortOrder      Int           @default(0) @map("sort_order")
+  archivedAt     DateTime?     @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   category     Category            @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)

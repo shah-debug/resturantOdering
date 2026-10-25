@@ -25,6 +25,14 @@ export interface AuthConfig {
   lockoutDurationMs: number;
 }
 
+export interface StorageConfig {
+  driver: Env['STORAGE_DRIVER'];
+  localDirectory: string;
+  bucket: string;
+  supabaseUrl: string | undefined;
+  supabaseServiceRoleKey: string | undefined;
+}
+
 export interface MailConfig {
   transport: Env['MAIL_TRANSPORT'];
   from: string;
@@ -88,6 +96,16 @@ export class AppConfig {
       sessionIdleTimeoutMs: this.env.SESSION_IDLE_TIMEOUT_HOURS * HOUR_MS,
       lockoutThreshold: this.env.AUTH_LOCKOUT_THRESHOLD,
       lockoutDurationMs: this.env.AUTH_LOCKOUT_MINUTES * 60 * 1000,
+    };
+  }
+
+  get storage(): StorageConfig {
+    return {
+      driver: this.env.STORAGE_DRIVER,
+      localDirectory: this.env.STORAGE_LOCAL_DIR,
+      bucket: this.env.STORAGE_BUCKET,
+      supabaseUrl: this.env.SUPABASE_URL?.replace(/\/$/, ''),
+      supabaseServiceRoleKey: this.env.SUPABASE_SERVICE_ROLE_KEY,
     };
   }
 

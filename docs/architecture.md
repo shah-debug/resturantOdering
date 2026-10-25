@@ -65,8 +65,8 @@ Tenant isolation is a security requirement, enforced in layers:
 | 0     | Monorepo, tooling, CI, security headers, CSP, rate limiting                       | Done  |
 | 1     | Supabase + Prisma foundation, schema, migrations, seed, readiness                 | Done  |
 | 2     | Staff authentication (HTTP-only cookie sessions, CSRF), RBAC, organization access | Done  |
-| 3     | Dashboard shell, organization and branch settings                                 |       |
-| 4     | Menu management                                                                   |       |
+| 3   | Dashboard shell, onboarding, organization and branch settings | Done |
+| 4   | Menu management (see [menu.md](menu.md)) | Done |
 | 5     | Storefront: host resolution, menu, cart                                           |       |
 | 6     | Checkout and order placement                                                      |       |
 | 7     | Order operations and live updates                                                 |       |

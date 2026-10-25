@@ -20,3 +20,9 @@ Thumbs.db
 apps/api/src/generated/
 
 apps/api/certs/
+
+apps/api/uploads/
+
+apps/api/.e2e-uploads/
+apps/dashboard/test-results/
+apps/dashboard/playwright-report/

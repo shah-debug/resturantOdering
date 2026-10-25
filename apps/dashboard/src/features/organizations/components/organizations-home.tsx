@@ -1,101 +1,82 @@
 'use client';
 
+import { ChevronRight, Plus, Store } from 'lucide-react';
 import Link from 'next/link';
-import { getErrorMessage } from '@app/web/api';
-import { Alert, Button, Card, CardDescription, CardHeader, CardTitle } from '@app/web/ui';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import type { MeResponse } from '@app/contracts';
+import { Button, Card } from '@app/web/ui';
+import { EmptyState, LoadingState } from '@/components/states';
+import { RestaurantMark } from '@/components/shell/restaurant-mark';
 import { useMeQuery } from '@/features/auth/auth-api';
-import { useListOrganizationsQuery } from '../organizations-api';
 import { ROLE_LABELS } from '../roles';
-import { CreateOrganizationForm } from './create-organization-form';
 
-function OrganizationList() {
-  const { data: me } = useMeQuery();
-  const { data, error, isLoading, isFetching, refetch } = useListOrganizationsQuery();
-
-  if (isLoading) {
-    return (
-      <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
-        Loading organizations…
-      </p>
-    );
+export function homeDestination(memberships: MeResponse['memberships']): string | null {
+  if (memberships.length === 0) {
+    return '/onboarding';
   }
-
-  if (error || !data) {
-    return (
-      <Alert variant="destructive">
-        <div className="flex flex-wrap items-center gap-3">
-          <span>{getErrorMessage(error)}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void refetch()}
-            pending={isFetching}
-            pendingText="Retrying…"
-          >
-            Retry
-          </Button>
-        </div>
-      </Alert>
-    );
+  if (memberships.length === 1 && memberships[0]) {
+    return `/organizations/${encodeURIComponent(memberships[0].organizationId)}`;
   }
-
-  if (data.length === 0) {
-    return (
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle>No organizations yet</CardTitle>
-          <CardDescription>
-            Create your first organization below, or ask a teammate to invite you to theirs.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  return (
-    <ul className="grid gap-3 sm:grid-cols-2">
-      {data.map((organization) => {
-        const role = me?.memberships.find(
-          (membership) => membership.organizationId === organization.id,
-        )?.role;
-        return (
-          <li key={organization.id}>
-            <Link
-              href={`/organizations/${organization.id}/members`}
-              className="block rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            >
-              <Card className="h-full transition-colors hover:bg-accent/50">
-                <CardHeader>
-                  <CardTitle className="text-base">{organization.name}</CardTitle>
-                  <CardDescription>
-                    {organization.slug}
-                    {role ? ` · ${ROLE_LABELS[role]}` : ''}
-                    {organization.status !== 'ACTIVE'
-                      ? ` · ${organization.status.toLowerCase()}`
-                      : ''}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
-  );
+  return null;
 }
 
 export function OrganizationsHome() {
+  const router = useRouter();
+  const { data: me } = useMeQuery();
+  const destination = me ? homeDestination(me.memberships) : null;
+
+  useEffect(() => {
+    if (destination) {
+      router.replace(destination);
+    }
+  }, [destination, router]);
+
+  if (!me || destination) {
+    return <LoadingState label="Opening your restaurant…" rows={1} />;
+  }
+
   return (
-    <div className="grid gap-8">
-      <section aria-labelledby="organizations-heading" className="grid gap-4">
-        <h1 id="organizations-heading" className="text-2xl font-semibold tracking-tight">
-          Your organizations
-        </h1>
-        <OrganizationList />
-      </section>
-      <section aria-label="Create an organization" className="max-w-lg">
-        <CreateOrganizationForm />
-      </section>
+    <div className="grid gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="grid gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Choose a restaurant</h1>
+          <p className="text-sm text-muted-foreground">
+            You&apos;re a member of {me.memberships.length} restaurants.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/onboarding">
+            <Plus aria-hidden="true" />
+            Add a restaurant
+          </Link>
+        </Button>
+      </header>
+      {me.memberships.length === 0 ? (
+        <EmptyState icon={Store} title="No restaurants yet" />
+      ) : (
+        <Card>
+          <ul className="divide-y" aria-label="Your restaurants">
+            {me.memberships.map((membership) => (
+              <li key={membership.membershipId}>
+                <Link
+                  href={`/organizations/${encodeURIComponent(membership.organizationId)}`}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset sm:px-6"
+                >
+                  <RestaurantMark name={membership.organizationName} />
+                  <span className="grid min-w-0 flex-1">
+                    <span className="truncate font-medium">{membership.organizationName}</span>
+                    <span className="truncate text-sm text-muted-foreground">
+                      {ROLE_LABELS[membership.role]} · {membership.organizationSlug}
+                    </span>
+                  </span>
+                  <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }

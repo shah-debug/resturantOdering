@@ -14,6 +14,7 @@ import {
   PaymentStatus,
   type Prisma,
   PrismaClient,
+  ProductStatus,
   PromotionType,
   RiderAvailability,
   StatusActorType,
@@ -283,6 +284,7 @@ async function seedCatalog(tx: Tx, organizationId: string): Promise<Catalog> {
           name: product.name,
           slug: product.slug,
           description: 'Fictional menu item for development',
+          status: ProductStatus.PUBLISHED,
           sortOrder: productIndex,
         },
       });

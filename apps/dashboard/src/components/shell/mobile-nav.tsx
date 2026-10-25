@@ -27,7 +27,9 @@ export function MobileNav({
       <SheetContent side="left" aria-describedby={undefined} closeLabel="Close navigation">
         <SheetHeader className="border-b">
           <SheetTitle className="flex items-center gap-3 pr-8">
-            <RestaurantMark name={restaurantName} logoUrl={logoUrl} />
+            <span aria-hidden="true">
+              <RestaurantMark name={restaurantName} logoUrl={logoUrl} />
+            </span>
             <span className="truncate">{restaurantName}</span>
           </SheetTitle>
         </SheetHeader>

@@ -85,6 +85,9 @@ describe('parseEnv', () => {
       APP_ORIGINS: 'https://app.example.com',
       MAIL_TRANSPORT: 'resend',
       RESEND_API_KEY: 're_test_key',
+      STORAGE_DRIVER: 'supabase',
+      SUPABASE_URL: 'https://abc.supabase.co',
+      SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value-123',
     };
 
     it('accepts a complete production configuration', () => {
@@ -95,6 +98,10 @@ describe('parseEnv', () => {
       expect(() => parseEnv({ ...production, DATABASE_SSL_CA_PATH: undefined })).toThrow(
         /DATABASE_SSL_CA_PATH/,
       );
+    });
+
+    it('rejects local file storage', () => {
+      expect(() => parseEnv({ ...production, STORAGE_DRIVER: 'local' })).toThrow(/STORAGE_DRIVER/);
     });
 
     it('rejects the log mail transport', () => {

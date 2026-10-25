@@ -41,7 +41,7 @@ describe('database integrity rules (in-memory Postgres, every test rolled back)'
              VALUES (gen_random_uuid(), $1, $2, $3, $4, 'x', 'x', 1, 30000, 30000)`,
             [tenant.organizationId, orderId, tenant.productId, tenant.otherVariantId],
           ),
-        ).rejects.toThrow(/foreign key/);
+        ).rejects.toThrow(/foreign key|not available to order/);
       });
     });
 
@@ -125,6 +125,96 @@ describe('database integrity rules (in-memory Postgres, every test rolled back)'
         await expect(client.query('DELETE FROM orders WHERE id = $1', [orderId])).rejects.toThrow(
           /cannot be deleted/,
         );
+      });
+    });
+  });
+
+  describe('only orderable menu items enter orders', () => {
+    type Target = 'product' | 'variant';
+
+    async function expectRejected(sql: string, target: Target): Promise<void> {
+      await inRollback(client, async () => {
+        const tenant = await createSqlTenant(client);
+        await client.query(sql, [target === 'product' ? tenant.productId : tenant.variantId]);
+        await expect(createSqlPickupOrder(client, tenant)).rejects.toThrow(
+          /not available to order/,
+        );
+      });
+    }
+
+    it('rejects draft products', async () => {
+      await expectRejected(`UPDATE products SET status = 'DRAFT' WHERE id = $1`, 'product');
+    });
+
+    it('rejects products marked unavailable', async () => {
+      await expectRejected('UPDATE products SET is_available = false WHERE id = $1', 'product');
+    });
+
+    it('rejects archived products', async () => {
+      await expectRejected('UPDATE products SET archived_at = now() WHERE id = $1', 'product');
+    });
+
+    it('rejects unavailable or archived options', async () => {
+      await expectRejected(
+        'UPDATE product_variants SET is_available = false WHERE id = $1',
+        'variant',
+      );
+      await expectRejected(
+        'UPDATE product_variants SET archived_at = now() WHERE id = $1',
+        'variant',
+      );
+    });
+
+    it('rejects products in a hidden category', async () => {
+      await expectRejected(
+        'UPDATE categories SET is_active = false WHERE id = (SELECT category_id FROM products WHERE id = $1)',
+        'product',
+      );
+    });
+
+    it('accepts add-ons only when they are available and linked to the product', async () => {
+      await inRollback(client, async () => {
+        const tenant = await createSqlTenant(client);
+        const group = await client.query<{ id: string }>(
+          `INSERT INTO add_on_groups (id, organization_id, name, min_select, max_select, updated_at)
+           VALUES (gen_random_uuid(), $1, 'Extras', 0, 2, now()) RETURNING id`,
+          [tenant.organizationId],
+        );
+        const groupId = group.rows[0]?.id;
+        const addOns = await client.query<{ id: string; name: string }>(
+          `INSERT INTO add_ons (id, organization_id, add_on_group_id, name, price_minor, is_available, updated_at)
+           VALUES (gen_random_uuid(), $1, $2, 'Naan', 6000, true, now()),
+                  (gen_random_uuid(), $1, $2, 'Sold out', 1000, false, now())
+           RETURNING id, name`,
+          [tenant.organizationId, groupId],
+        );
+        const naan = addOns.rows.find((row) => row.name === 'Naan')?.id;
+        const soldOut = addOns.rows.find((row) => row.name === 'Sold out')?.id;
+        const orderId = await createSqlPickupOrder(client, tenant);
+        const item = await client.query<{ id: string }>(
+          'SELECT id FROM order_items WHERE order_id = $1',
+          [orderId],
+        );
+        const itemId = item.rows[0]?.id;
+        const insertAddOn = (addOnId: string | undefined) =>
+          client.query(
+            `INSERT INTO order_item_add_ons (id, organization_id, order_item_id, add_on_id, group_name, name, unit_price_minor)
+             VALUES (gen_random_uuid(), $1, $2, $3, 'Extras', 'x', 0)`,
+            [tenant.organizationId, itemId, addOnId],
+          );
+
+        await client.query('SAVEPOINT unlinked');
+        await expect(insertAddOn(naan)).rejects.toThrow(/not available for this product/);
+        await client.query('ROLLBACK TO SAVEPOINT unlinked');
+
+        await client.query(
+          'INSERT INTO product_add_on_groups (organization_id, product_id, add_on_group_id) VALUES ($1, $2, $3)',
+          [tenant.organizationId, tenant.productId, groupId],
+        );
+        await client.query('SAVEPOINT unavailable');
+        await expect(insertAddOn(soldOut)).rejects.toThrow(/not available for this product/);
+        await client.query('ROLLBACK TO SAVEPOINT unavailable');
+        await expect(insertAddOn(naan)).resolves.toBeDefined();
       });
     });
   });

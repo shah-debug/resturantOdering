@@ -48,6 +48,9 @@ describe('session cookie configuration', () => {
         APP_ORIGINS: 'https://app.example.com',
         MAIL_TRANSPORT: 'resend',
         RESEND_API_KEY: 're_key',
+        STORAGE_DRIVER: 'supabase',
+        SUPABASE_URL: 'https://abc.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value-123',
       }),
     );
     const options = sessionCookieOptions(config.auth, 1000);

@@ -42,7 +42,15 @@ export function ProfileForm({
   });
   const [clientErrors, setClientErrors] = useState<FieldErrors>({});
   const errors = { ...getFieldErrors(error), ...clientErrors };
-  const timeZones = useMemo(() => timeZoneOptions(organization.timezone), [organization.timezone]);
+  const timeZoneItems = useMemo(
+    () =>
+      timeZoneOptions(organization.timezone).map((zone) => (
+        <option key={zone} value={zone}>
+          {zone.replace(/_/g, ' ')}
+        </option>
+      )),
+    [organization.timezone],
+  );
   const previewUrl = logoUrlSchema.safeParse(values.logoUrl.trim()).success
     ? values.logoUrl.trim()
     : null;
@@ -165,11 +173,7 @@ export function ProfileForm({
               value={values.timezone}
               onChange={(event) => update('timezone', event.target.value)}
             >
-              {timeZones.map((zone) => (
-                <option key={zone} value={zone}>
-                  {zone.replace(/_/g, ' ')}
-                </option>
-              ))}
+              {timeZoneItems}
             </Select>
           )}
         </Field>

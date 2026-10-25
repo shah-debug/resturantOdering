@@ -1,12 +1,17 @@
 'use client';
 
-import { LayoutDashboard, ListChecks, Settings, Users } from 'lucide-react';
+import { LayoutDashboard, ListChecks, Settings, UtensilsCrossed, Users } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Skeleton } from '@app/web/ui';
-import { ErrorState, isUnavailableError, LoadingState, UnavailableState } from '@/components/states';
+import {
+  ErrorState,
+  isUnavailableError,
+  LoadingState,
+  UnavailableState,
+} from '@/components/states';
 import { useGetOrganizationQuery } from '@/features/organizations/organizations-api';
-import { canManageRestaurant, canManageTeam } from '@/features/organizations/roles';
+import { canManageRestaurant, canManageTeam, canReadMenu } from '@/features/organizations/roles';
 import { useGetOnboardingStatusQuery } from '@/features/restaurant/restaurant-api';
 import { setupProgress } from '@/features/restaurant/steps';
 import type { NavItem } from './main-nav';
@@ -19,6 +24,7 @@ import { type Crumb, TopBar } from './top-bar';
 
 const SECTION_LABELS: Record<string, string> = {
   onboarding: 'Setup',
+  menu: 'Menu',
   members: 'Team',
   settings: 'Settings',
 };
@@ -66,6 +72,9 @@ export function OrganizationShell({
   const items: NavItem[] = [
     { href: base, label: 'Overview', icon: LayoutDashboard, exact: true },
     { href: `${base}/onboarding`, label: 'Setup', icon: ListChecks, badge: setupBadge },
+    ...(canReadMenu(membership?.role)
+      ? [{ href: `${base}/menu`, label: 'Menu', icon: UtensilsCrossed }]
+      : []),
     ...(canManageTeam(membership?.role)
       ? [{ href: `${base}/members`, label: 'Team', icon: Users }]
       : []),

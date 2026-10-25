@@ -1,4 +1,17 @@
 export { Alert, type AlertProps, type AlertVariant } from './alert';
+export {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  AlertDialogPortal,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './alert-dialog';
 export { Avatar, AvatarFallback, AvatarImage } from './avatar';
 export { Badge, type BadgeVariant, badgeVariants } from './badge';
 export {
@@ -18,6 +31,19 @@ export {
   buttonVariants,
 } from './button';
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  type DialogContentProps,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+} from './dialog';
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,

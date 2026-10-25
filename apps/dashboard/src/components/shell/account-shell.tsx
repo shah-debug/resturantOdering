@@ -29,9 +29,7 @@ export function AccountShell({
         }
         breadcrumbs={breadcrumbs}
       />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
-        {children}
-      </main>
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 sm:py-10">{children}</main>
     </div>
   );
 }

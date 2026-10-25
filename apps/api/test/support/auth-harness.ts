@@ -98,6 +98,17 @@ export class Client {
     return this.withAuth(request(this.app.getHttpServer()).put(`${API}${path}`)).send(body);
   }
 
+  upload(path: string, file: Buffer, filename: string, contentType: string) {
+    return this.withAuth(request(this.app.getHttpServer()).post(`${API}${path}`)).attach(
+      'file',
+      file,
+      {
+        filename,
+        contentType,
+      },
+    );
+  }
+
   delete(path: string) {
     return this.withAuth(request(this.app.getHttpServer()).delete(`${API}${path}`));
   }

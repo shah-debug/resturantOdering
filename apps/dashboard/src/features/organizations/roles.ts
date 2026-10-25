@@ -48,3 +48,18 @@ export function canManageRestaurant(role: MembershipRole | undefined): boolean {
 export function canManageTeam(role: MembershipRole | undefined): boolean {
   return assignableRoles(role).length > 0;
 }
+
+const MENU_READERS: readonly MembershipRole[] = [
+  'OWNER',
+  'MANAGER',
+  'ORDER_STAFF',
+  'KITCHEN_STAFF',
+];
+
+export function canReadMenu(role: MembershipRole | undefined): boolean {
+  return role !== undefined && MENU_READERS.includes(role);
+}
+
+export function canManageMenu(role: MembershipRole | undefined): boolean {
+  return canManageRestaurant(role);
+}

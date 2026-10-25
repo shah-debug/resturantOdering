@@ -14,6 +14,9 @@ const statusClasses: Record<Member['status'], string> = {
   SUSPENDED: 'bg-destructive/10 text-destructive',
 };
 
+const stackedCell =
+  'max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:py-1 max-sm:before:text-xs max-sm:before:font-medium max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]';
+
 export interface MemberRowProps {
   organizationId: string;
   member: Member;
@@ -48,15 +51,15 @@ export function MemberRow({
   }
 
   return (
-    <TableRow>
-      <TableCell>
+    <TableRow className="max-sm:grid max-sm:py-2">
+      <TableCell className="max-sm:pb-1">
         <div className="font-medium">
           {member.fullName}
           {isSelf ? <span className="ml-1 text-muted-foreground">(you)</span> : null}
         </div>
         <div className="text-muted-foreground break-all">{member.email}</div>
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Role" className={stackedCell}>
         {manageable ? (
           <Select
             aria-label={`Role for ${member.fullName}`}
@@ -80,7 +83,7 @@ export function MemberRow({
           ROLE_LABELS[member.role]
         )}
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Status" className={stackedCell}>
         <span
           className={cn(
             'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
@@ -91,7 +94,7 @@ export function MemberRow({
         </span>
       </TableCell>
       {showActions ? (
-        <TableCell>
+        <TableCell data-label="Actions" className={stackedCell}>
           {manageable ? (
             <div className="grid gap-2">
               {confirmingRemoval ? (

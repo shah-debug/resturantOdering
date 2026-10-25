@@ -25,6 +25,18 @@ export const AuditAction = {
   OpeningHoursUpdated: 'branch.opening_hours_updated',
   FulfillmentUpdated: 'branch.fulfillment_updated',
   OnboardingCompleted: 'organization.onboarding_completed',
+  CategoryCreated: 'menu.category_created',
+  CategoryUpdated: 'menu.category_updated',
+  CategoryArchived: 'menu.category_archived',
+  CategoriesReordered: 'menu.categories_reordered',
+  ProductCreated: 'menu.product_created',
+  ProductUpdated: 'menu.product_updated',
+  ProductArchived: 'menu.product_archived',
+  ProductsReordered: 'menu.products_reordered',
+  ProductImageUpdated: 'menu.product_image_updated',
+  AddOnGroupCreated: 'menu.add_on_group_created',
+  AddOnGroupUpdated: 'menu.add_on_group_updated',
+  AddOnGroupArchived: 'menu.add_on_group_archived',
 } as const;
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];

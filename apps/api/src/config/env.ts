@@ -49,6 +49,14 @@ export const envSchema = z
     MAIL_TRANSPORT: z.enum(['log', 'resend']).default('log'),
     MAIL_FROM: z.string().min(3).default('Restaurant Platform <no-reply@localhost>'),
     RESEND_API_KEY: z.string().min(1).optional(),
+    STORAGE_DRIVER: z.enum(['local', 'supabase']).default('local'),
+    STORAGE_LOCAL_DIR: z.string().min(1).default('uploads'),
+    STORAGE_BUCKET: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9-]{1,61}$/)
+      .default('menu-images'),
+    SUPABASE_URL: z.url().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.DATABASE_SSL_CA_PATH && /[?&]sslmode=/i.test(env.DATABASE_URL)) {
@@ -83,6 +91,24 @@ export const envSchema = z
           });
         }
       }
+    }
+    if (
+      env.STORAGE_DRIVER === 'supabase' &&
+      (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY)
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['STORAGE_DRIVER'],
+        message:
+          'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required when STORAGE_DRIVER=supabase',
+      });
+    }
+    if (env.NODE_ENV === 'production' && env.STORAGE_DRIVER === 'local') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['STORAGE_DRIVER'],
+        message: 'Local file storage is for development only; use supabase in production',
+      });
     }
     if (env.MAIL_TRANSPORT === 'resend' && !env.RESEND_API_KEY) {
       ctx.addIssue({

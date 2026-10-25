@@ -1,13 +1,26 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import {
   Alert,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
   Field,
   Input,
   Label,
@@ -110,5 +123,47 @@ describe('ui primitives', () => {
     );
     const nav = screen.getByRole('navigation', { name: 'Breadcrumb' });
     expect(within(nav).getByText('Settings')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('confirms or cancels from an alert dialog', async () => {
+    const onConfirm = vi.fn();
+    render(
+      <AlertDialog>
+        <AlertDialogTrigger>Delete item</AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+          <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Delete</AlertDialogAction>
+        </AlertDialogContent>
+      </AlertDialog>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Delete item' }));
+    let dialog = await screen.findByRole('alertdialog', { name: 'Delete this item?' });
+    expect(dialog).toHaveAccessibleDescription('This cannot be undone.');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(onConfirm).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete item' }));
+    dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens a dialog with a labelled close button', async () => {
+    render(
+      <Dialog>
+        <DialogTrigger>Edit</DialogTrigger>
+        <DialogContent closeLabel="Close editor">
+          <DialogTitle>Edit category</DialogTitle>
+          <DialogDescription>Rename it</DialogDescription>
+        </DialogContent>
+      </Dialog>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit category' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close editor' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

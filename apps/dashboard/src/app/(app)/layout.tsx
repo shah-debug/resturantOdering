@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { AppShell } from '@/components/app-shell';
+import { AuthGate } from '@/components/shell/session';
 
 export default function AuthenticatedLayout({ children }: { children: ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+  return <AuthGate>{children}</AuthGate>;
 }

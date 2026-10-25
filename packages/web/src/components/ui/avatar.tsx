@@ -14,10 +14,7 @@ export function Avatar({ className, ...props }: ComponentProps<typeof AvatarPrim
   );
 }
 
-export function AvatarImage({
-  className,
-  ...props
-}: ComponentProps<typeof AvatarPrimitive.Image>) {
+export function AvatarImage({ className, ...props }: ComponentProps<typeof AvatarPrimitive.Image>) {
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"

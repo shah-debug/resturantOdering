@@ -1,4 +1,5 @@
 import { type Branch, minutesToTime } from '@app/contracts';
+import { slugify } from '../../common/text/slug.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { BranchStatus } from '../../generated/prisma/enums.js';
 
@@ -69,13 +70,5 @@ export function toBranch(row: BranchRow): Branch {
 }
 
 export function slugifyBranchName(name: string): string {
-  const slug = name
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 50)
-    .replace(/-+$/g, '');
-  return slug.length >= 1 ? slug : 'branch';
+  return slugify(name, 'branch');
 }
