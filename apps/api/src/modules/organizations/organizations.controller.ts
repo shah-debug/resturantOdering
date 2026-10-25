@@ -1,11 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
-import type { Organization } from '@app/contracts';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import type { Organization, SlugAvailability } from '@app/contracts';
 import type { Request } from 'express';
 import { OrganizationRoute } from '../access/organization-access.guard.js';
 import { Permission } from '../access/permissions.js';
 import { CurrentAuth } from '../auth/http/decorators.js';
 import { type AuthContext, requestMeta } from '../auth/http/request-context.js';
-import { CreateOrganizationDto, UpdateOrganizationDto } from './dto/organization.dto.js';
+import {
+  CreateOrganizationDto,
+  SlugAvailabilityQueryDto,
+  UpdateOrganizationDto,
+} from './dto/organization.dto.js';
 import { OrganizationsService } from './organizations.service.js';
 
 @Controller('organizations')
@@ -19,6 +23,11 @@ export class OrganizationsController {
     @Req() request: Request,
   ): Promise<Organization> {
     return this.organizations.create(auth, dto, requestMeta(request));
+  }
+
+  @Get('slug-availability')
+  checkSlug(@Query() query: SlugAvailabilityQueryDto): Promise<SlugAvailability> {
+    return this.organizations.checkSlug(query.slug);
   }
 
   @Get()

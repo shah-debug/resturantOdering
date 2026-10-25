@@ -1,5 +1,11 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import type { Organization, Paginated } from '@app/contracts';
+import {
+  type Organization,
+  organizationSlugSchema,
+  type Paginated,
+  RESERVED_ORGANIZATION_SLUGS,
+  type SlugAvailability,
+} from '@app/contracts';
 import { AppException, ValidationFailedException } from '../../common/errors/app.exception.js';
 import { isUniqueViolation } from '../../database/prisma-errors.js';
 import { PrismaService } from '../../database/prisma.service.js';
@@ -70,6 +76,22 @@ export class OrganizationsService {
       }
       throw error;
     }
+  }
+
+  async checkSlug(slug: string): Promise<SlugAvailability> {
+    if ((RESERVED_ORGANIZATION_SLUGS as readonly string[]).includes(slug)) {
+      return { slug, available: false, reason: 'reserved' };
+    }
+    if (!organizationSlugSchema.safeParse(slug).success) {
+      return { slug, available: false, reason: 'invalid' };
+    }
+    const existing = await this.prisma.organization.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    return existing
+      ? { slug, available: false, reason: 'taken' }
+      : { slug, available: true, reason: null };
   }
 
   async listForUser(userId: string): Promise<Organization[]> {

@@ -8,6 +8,8 @@ import {
   IsNotIn,
   IsOptional,
   IsString,
+  IsTimeZone,
+  IsUrl,
   IsUUID,
   Length,
   Matches,
@@ -62,6 +64,31 @@ export class UpdateOrganizationDto {
   @IsOptional()
   @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'Use a hex colour such as #B45309' })
   primaryColor?: string | null;
+
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @Length(10, 500)
+  description?: string | null;
+
+  @IsOptional()
+  @IsUrl(
+    { protocols: ['https'], require_protocol: true, require_tld: true },
+    { message: 'Use an https:// image address' },
+  )
+  @MaxLength(2048)
+  logoUrl?: string | null;
+
+  @IsOptional()
+  @IsTimeZone({ message: 'Choose a valid time zone' })
+  timezone?: string;
+}
+
+export class SlugAvailabilityQueryDto {
+  @Transform(trimLower)
+  @IsString()
+  @MaxLength(100)
+  slug!: string;
 }
 
 export class PaginationQueryDto {

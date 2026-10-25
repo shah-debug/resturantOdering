@@ -3,7 +3,7 @@ import type { SerializedError } from '@reduxjs/toolkit';
 import { baseApi } from '@app/web/api';
 
 export const dashboardApi = baseApi.enhanceEndpoints({
-  addTagTypes: ['Me', 'Organization', 'Member'],
+  addTagTypes: ['Me', 'Organization', 'Member', 'Onboarding', 'Branch', 'SlugAvailability'],
 });
 
 export function hasHttpStatus(

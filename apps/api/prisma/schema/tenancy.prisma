@@ -43,21 +43,23 @@ enum SubscriptionStatus {
 }
 
 model Organization {
-  id              String             @id @default(uuid(7)) @db.Uuid
-  slug            String             @unique @db.VarChar(63)
-  name            String             @db.VarChar(120)
-  legalName       String?            @map("legal_name") @db.VarChar(200)
-  ntn             String?            @db.VarChar(20)
-  status          OrganizationStatus @default(ACTIVE)
-  currency        String             @default("PKR") @db.Char(3)
-  timezone        String             @default("Asia/Karachi") @db.VarChar(64)
-  contactEmail    String?            @map("contact_email") @db.VarChar(320)
-  contactPhone    String?            @map("contact_phone") @db.VarChar(16)
-  logoUrl         String?            @map("logo_url") @db.VarChar(2048)
-  primaryColor    String?            @map("primary_color") @db.Char(7)
-  lastOrderNumber Int                @default(0) @map("last_order_number")
-  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                    String             @id @default(uuid(7)) @db.Uuid
+  slug                  String             @unique @db.VarChar(63)
+  name                  String             @db.VarChar(120)
+  legalName             String?            @map("legal_name") @db.VarChar(200)
+  ntn                   String?            @db.VarChar(20)
+  status                OrganizationStatus @default(ACTIVE)
+  currency              String             @default("PKR") @db.Char(3)
+  timezone              String             @default("Asia/Karachi") @db.VarChar(64)
+  contactEmail          String?            @map("contact_email") @db.VarChar(320)
+  contactPhone          String?            @map("contact_phone") @db.VarChar(16)
+  logoUrl               String?            @map("logo_url") @db.VarChar(2048)
+  primaryColor          String?            @map("primary_color") @db.Char(7)
+  description           String?            @db.VarChar(500)
+  onboardingCompletedAt DateTime?          @map("onboarding_completed_at") @db.Timestamptz(3)
+  lastOrderNumber       Int                @default(0) @map("last_order_number")
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   domains            OrganizationDomain[]
   memberships        Membership[]
@@ -82,6 +84,7 @@ model Organization {
   payments           Payment[]
   notifications      Notification[]
   auditLogs          AuditLog[]
+  branchOpeningHours BranchOpeningHours[]
 
   @@map("organizations")
 }
@@ -130,26 +133,30 @@ model Membership {
 }
 
 model Branch {
-  id                String       @id @default(uuid(7)) @db.Uuid
-  organizationId    String       @map("organization_id") @db.Uuid
-  name              String       @db.VarChar(120)
-  slug              String       @db.VarChar(63)
-  status            BranchStatus @default(ACTIVE)
-  isAcceptingOrders Boolean      @default(true) @map("is_accepting_orders")
-  phone             String?      @db.VarChar(16)
-  addressLine       String       @map("address_line") @db.VarChar(255)
-  area              String?      @db.VarChar(120)
-  city              String       @db.VarChar(80)
-  latitude          Decimal?     @db.Decimal(9, 6)
-  longitude         Decimal?     @db.Decimal(9, 6)
-  taxRateBps        Int          @default(0) @map("tax_rate_bps")
-  pricesIncludeTax  Boolean      @default(false) @map("prices_include_tax")
-  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                 String       @id @default(uuid(7)) @db.Uuid
+  organizationId     String       @map("organization_id") @db.Uuid
+  name               String       @db.VarChar(120)
+  slug               String       @db.VarChar(63)
+  status             BranchStatus @default(ACTIVE)
+  isAcceptingOrders  Boolean      @default(true) @map("is_accepting_orders")
+  phone              String?      @db.VarChar(16)
+  addressLine        String       @map("address_line") @db.VarChar(255)
+  area               String?      @db.VarChar(120)
+  city               String       @db.VarChar(80)
+  latitude           Decimal?     @db.Decimal(9, 6)
+  longitude          Decimal?     @db.Decimal(9, 6)
+  taxRateBps         Int          @default(0) @map("tax_rate_bps")
+  pricesIncludeTax   Boolean      @default(false) @map("prices_include_tax")
+  deliveryEnabled    Boolean      @default(true) @map("delivery_enabled")
+  pickupEnabled      Boolean      @default(true) @map("pickup_enabled")
+  preparationMinutes Int          @default(20) @map("preparation_minutes")
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  organization  Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   memberships   Membership[]
   deliveryZones DeliveryZone[]
+  openingHours  BranchOpeningHours[]
   riders        Rider[]
   orders        Order[]
 
@@ -181,4 +188,20 @@ model Subscription {
   @@index([organizationId, createdAt(sort: Desc)])
   @@index([planId])
   @@map("subscriptions")
+}
+
+model BranchOpeningHours {
+  id              String @id @default(uuid(7)) @db.Uuid
+  organizationId  String @map("organization_id") @db.Uuid
+  branchId        String @map("branch_id") @db.Uuid
+  dayOfWeek       Int    @map("day_of_week") @db.SmallInt
+  opensAtMinutes  Int    @map("opens_at_minutes") @db.SmallInt
+  closesAtMinutes Int    @map("closes_at_minutes") @db.SmallInt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch       Branch       @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([branchId, dayOfWeek, opensAtMinutes])
+  @@index([organizationId, branchId])
+  @@map("branch_opening_hours")
 }

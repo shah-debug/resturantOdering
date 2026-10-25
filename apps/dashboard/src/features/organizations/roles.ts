@@ -40,3 +40,11 @@ export function suggestSlug(name: string): string {
     .slice(0, 63)
     .replace(/-+$/, '');
 }
+
+export function canManageRestaurant(role: MembershipRole | undefined): boolean {
+  return role === 'OWNER' || role === 'MANAGER';
+}
+
+export function canManageTeam(role: MembershipRole | undefined): boolean {
+  return assignableRoles(role).length > 0;
+}

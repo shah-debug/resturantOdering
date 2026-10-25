@@ -52,7 +52,8 @@ export const organizationsApi = dashboardApi.injectEndpoints({
     createOrganization: build.mutation<Organization, CreateOrganizationRequest>({
       query: (body) => ({ url: '/organizations', method: 'POST', body }),
       transformResponse: (response: unknown) => organizationSchema.parse(response),
-      invalidatesTags: (result) => (result ? [{ type: 'Organization', id: 'LIST' }, 'Me'] : []),
+      invalidatesTags: (result) =>
+        result ? [{ type: 'Organization', id: 'LIST' }, 'Me', 'SlugAvailability'] : [],
     }),
     updateOrganization: build.mutation<
       Organization,
@@ -65,7 +66,13 @@ export const organizationsApi = dashboardApi.injectEndpoints({
       }),
       transformResponse: (response: unknown) => organizationSchema.parse(response),
       invalidatesTags: (result, _error, { organizationId }) =>
-        result ? [{ type: 'Organization', id: organizationId }, 'Me'] : [],
+        result
+          ? [
+              { type: 'Organization', id: organizationId },
+              { type: 'Onboarding', id: organizationId },
+              'Me',
+            ]
+          : [],
     }),
     listMembers: build.query<Paginated<Member>, MembersQuery>({
       query: ({ organizationId, page, pageSize }) => ({

@@ -20,6 +20,11 @@ export const AuditAction = {
   MemberInvited: 'membership.invited',
   MemberUpdated: 'membership.updated',
   MemberRemoved: 'membership.removed',
+  BranchCreated: 'branch.created',
+  BranchUpdated: 'branch.updated',
+  OpeningHoursUpdated: 'branch.opening_hours_updated',
+  FulfillmentUpdated: 'branch.fulfillment_updated',
+  OnboardingCompleted: 'organization.onboarding_completed',
 } as const;
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { e164PhoneSchema, timeZoneSchema } from './common.js';
 import {
   emailSchema,
   fullNameSchema,
@@ -38,10 +39,10 @@ export const organizationSlugSchema = z
   );
 
 export const organizationNameSchema = z.string().trim().min(2).max(120);
-export const e164PhoneSchema = z
-  .string()
-  .trim()
-  .regex(/^\+[1-9][0-9]{7,14}$/, 'Use international format, e.g. +923001234567');
+
+export const logoUrlSchema = z
+  .url({ protocol: /^https$/, message: 'Use an https:// image address' })
+  .max(2048);
 
 export const ORGANIZATION_STATUSES = ['ACTIVE', 'SUSPENDED', 'CLOSED'] as const;
 
@@ -55,6 +56,9 @@ export const organizationSchema = z.object({
   contactEmail: z.string().nullable(),
   contactPhone: z.string().nullable(),
   primaryColor: z.string().nullable(),
+  logoUrl: z.string().nullable(),
+  description: z.string().nullable(),
+  onboardingCompletedAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
 });
 export type Organization = z.infer<typeof organizationSchema>;
@@ -75,6 +79,9 @@ export const updateOrganizationRequestSchema = z
       .regex(/^#[0-9A-Fa-f]{6}$/, 'Use a hex colour such as #B45309')
       .nullable()
       .optional(),
+    description: z.string().trim().min(10).max(500).nullable().optional(),
+    logoUrl: logoUrlSchema.nullable().optional(),
+    timezone: timeZoneSchema.optional(),
   })
   .refine((value) => Object.keys(value).length > 0, 'Provide at least one field to update');
 export type UpdateOrganizationRequest = z.infer<typeof updateOrganizationRequestSchema>;

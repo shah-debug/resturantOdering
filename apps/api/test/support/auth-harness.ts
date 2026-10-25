@@ -94,6 +94,10 @@ export class Client {
     return this.withAuth(request(this.app.getHttpServer()).patch(`${API}${path}`)).send(body);
   }
 
+  put(path: string, body: object = {}) {
+    return this.withAuth(request(this.app.getHttpServer()).put(`${API}${path}`)).send(body);
+  }
+
   delete(path: string) {
     return this.withAuth(request(this.app.getHttpServer()).delete(`${API}${path}`));
   }

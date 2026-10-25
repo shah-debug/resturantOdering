@@ -15,6 +15,9 @@ export const organizationSelect = {
   contactEmail: true,
   contactPhone: true,
   primaryColor: true,
+  logoUrl: true,
+  description: true,
+  onboardingCompletedAt: true,
   createdAt: true,
 } as const;
 
@@ -28,11 +31,18 @@ export interface OrganizationRow {
   contactEmail: string | null;
   contactPhone: string | null;
   primaryColor: string | null;
+  logoUrl: string | null;
+  description: string | null;
+  onboardingCompletedAt: Date | null;
   createdAt: Date;
 }
 
 export function toOrganization(row: OrganizationRow): Organization {
-  return { ...row, createdAt: row.createdAt.toISOString() };
+  return {
+    ...row,
+    onboardingCompletedAt: row.onboardingCompletedAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
 export const memberSelect = {

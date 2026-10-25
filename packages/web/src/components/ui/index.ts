@@ -1,4 +1,15 @@
 export { Alert, type AlertProps, type AlertVariant } from './alert';
+export { Avatar, AvatarFallback, AvatarImage } from './avatar';
+export { Badge, type BadgeVariant, badgeVariants } from './badge';
+export {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from './breadcrumb';
 export {
   Button,
   type ButtonProps,
@@ -7,10 +18,44 @@ export {
   buttonVariants,
 } from './button';
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
+export {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from './dropdown-menu';
 export { Field, type FieldControlProps, type FieldProps } from './field';
-export { Input } from './input';
+export { controlClasses, Input } from './input';
 export { Label } from './label';
+export { Progress } from './progress';
 export { Select } from './select';
+export { Separator } from './separator';
+export {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  type SheetContentProps,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetOverlay,
+  SheetPortal,
+  SheetTitle,
+  SheetTrigger,
+} from './sheet';
+export { Skeleton } from './skeleton';
+export { Switch } from './switch';
 export {
   Table,
   TableBody,
@@ -20,3 +65,4 @@ export {
   TableHeader,
   TableRow,
 } from './table';
+export { Textarea } from './textarea';

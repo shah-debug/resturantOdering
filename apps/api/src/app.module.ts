@@ -13,6 +13,8 @@ import { SessionAuthGuard } from './modules/auth/guards/session-auth.guard.js';
 import { SENSITIVE_RATE_LIMIT_KEY } from './modules/auth/http/decorators.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MailModule } from './modules/mail/mail.module.js';
+import { BranchesModule } from './modules/branches/branches.module.js';
+import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
 
 @Module({
@@ -40,6 +42,8 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
     AuthModule,
     HealthModule,
     OrganizationsModule,
+    BranchesModule,
+    OnboardingModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
