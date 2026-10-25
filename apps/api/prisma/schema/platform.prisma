@@ -1,0 +1,73 @@
+enum PlatformRole {
+  SUPER_ADMIN
+  SUPPORT
+
+  @@map("platform_role")
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+
+  @@map("user_status")
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+
+  @@map("billing_interval")
+}
+
+model User {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  email           String        @unique @db.VarChar(320)
+  phone           String?       @unique @db.VarChar(16)
+  fullName        String        @map("full_name") @db.VarChar(120)
+  status          UserStatus    @default(ACTIVE)
+  platformRole    PlatformRole? @map("platform_role")
+  emailVerifiedAt DateTime?     @map("email_verified_at") @db.Timestamptz(3)
+  phoneVerifiedAt DateTime?     @map("phone_verified_at") @db.Timestamptz(3)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  passwordHash        String?   @map("password_hash") @db.VarChar(255)
+  passwordChangedAt   DateTime? @map("password_changed_at") @db.Timestamptz(3)
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz(3)
+  lastLoginAt         DateTime? @map("last_login_at") @db.Timestamptz(3)
+
+  memberships        Membership[]         @relation("MembershipUser")
+  invitedMemberships Membership[]         @relation("MembershipInviter")
+  sessions           Session[]
+  authTokens         AuthToken[]
+  riderProfiles      Rider[]
+  orderStatusChanges OrderStatusHistory[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
+}
+
+model Plan {
+  id              String          @id @default(uuid(7)) @db.Uuid
+  code            String          @unique @db.VarChar(40)
+  name            String          @db.VarChar(80)
+  description     String?         @db.VarChar(500)
+  priceMinor      Int             @map("price_minor")
+  currency        String          @default("PKR") @db.Char(3)
+  billingInterval BillingInterval @default(MONTHLY) @map("billing_interval")
+  maxBranches     Int?            @map("max_branches")
+  maxProducts     Int?            @map("max_products")
+  maxRiders       Int?            @map("max_riders")
+  trialDays       Int             @default(0) @map("trial_days")
+  isActive        Boolean         @default(true) @map("is_active")
+  sortOrder       Int             @default(0) @map("sort_order")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}

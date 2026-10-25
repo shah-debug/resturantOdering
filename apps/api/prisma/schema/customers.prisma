@@ -1,0 +1,83 @@
+model Customer {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  phone          String    @db.VarChar(16)
+  fullName       String    @map("full_name") @db.VarChar(120)
+  email          String?   @db.VarChar(320)
+  marketingOptIn Boolean   @default(false) @map("marketing_opt_in")
+  blockedAt      DateTime? @map("blocked_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  addresses     CustomerAddress[]
+  orders        Order[]
+  notifications Notification[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, phone])
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id                   String   @id @default(uuid(7)) @db.Uuid
+  organizationId       String   @map("organization_id") @db.Uuid
+  customerId           String   @map("customer_id") @db.Uuid
+  label                String?  @db.VarChar(40)
+  addressLine          String   @map("address_line") @db.VarChar(255)
+  area                 String?  @db.VarChar(120)
+  city                 String   @db.VarChar(80)
+  landmark             String?  @db.VarChar(160)
+  latitude             Decimal? @db.Decimal(9, 6)
+  longitude            Decimal? @db.Decimal(9, 6)
+  deliveryInstructions String?  @map("delivery_instructions") @db.VarChar(500)
+  isDefault            Boolean  @default(false) @map("is_default")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  customer     Customer     @relation(fields: [organizationId, customerId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([customerId], where: { isDefault: true }, map: "customer_addresses_one_default_per_customer_key")
+  @@index([organizationId, customerId])
+  @@map("customer_addresses")
+}
+
+model DeliveryZone {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  organizationId   String    @map("organization_id") @db.Uuid
+  branchId         String    @map("branch_id") @db.Uuid
+  name             String    @db.VarChar(120)
+  feeMinor         Int       @map("fee_minor")
+  minOrderMinor    Int       @default(0) @map("min_order_minor")
+  radiusMeters     Int?      @map("radius_meters")
+  estimatedMinutes Int       @default(45) @map("estimated_minutes")
+  isActive         Boolean   @default(true) @map("is_active")
+  archivedAt       DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch       Branch             @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  areas        DeliveryZoneArea[]
+  orders       Order[]
+
+  @@unique([organizationId, id])
+  @@unique([branchId, name])
+  @@index([organizationId, branchId])
+  @@map("delivery_zones")
+}
+
+model DeliveryZoneArea {
+  id             String @id @default(uuid(7)) @db.Uuid
+  organizationId String @map("organization_id") @db.Uuid
+  deliveryZoneId String @map("delivery_zone_id") @db.Uuid
+  name           String @db.VarChar(120)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  deliveryZone DeliveryZone @relation(fields: [organizationId, deliveryZoneId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([deliveryZoneId, name])
+  @@index([organizationId, name])
+  @@map("delivery_zone_areas")
+}

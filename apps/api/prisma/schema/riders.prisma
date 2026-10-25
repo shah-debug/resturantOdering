@@ -1,0 +1,51 @@
+enum VehicleType {
+  MOTORCYCLE
+  BICYCLE
+  CAR
+  ON_FOOT
+
+  @@map("vehicle_type")
+}
+
+enum RiderStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("rider_status")
+}
+
+enum RiderAvailability {
+  OFFLINE
+  AVAILABLE
+  ON_DELIVERY
+
+  @@map("rider_availability")
+}
+
+model Rider {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  organizationId String            @map("organization_id") @db.Uuid
+  branchId       String?           @map("branch_id") @db.Uuid
+  userId         String?           @map("user_id") @db.Uuid
+  fullName       String            @map("full_name") @db.VarChar(120)
+  phone          String            @db.VarChar(16)
+  vehicleType    VehicleType       @default(MOTORCYCLE) @map("vehicle_type")
+  vehicleNumber  String?           @map("vehicle_number") @db.VarChar(20)
+  status         RiderStatus       @default(ACTIVE)
+  availability   RiderAvailability @default(OFFLINE)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch            Branch?      @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  user              User?        @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+  orders            Order[]
+  collectedPayments Payment[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, phone])
+  @@unique([organizationId, userId])
+  @@index([organizationId, branchId, availability])
+  @@index([userId])
+  @@map("riders")
+}

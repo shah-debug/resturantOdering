@@ -1,9 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
+import { Public } from '../src/modules/auth/http/decorators';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { apiErrorResponseSchema } from '@app/contracts';
 import request from 'supertest';
 import { createTestApp } from './create-test-app';
 
+@Public()
 @Controller('rate-limit-probe')
 class RateLimitProbeController {
   @Get()

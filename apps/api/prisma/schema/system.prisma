@@ -1,0 +1,70 @@
+enum NotificationChannel {
+  SMS
+  WHATSAPP
+  EMAIL
+  PUSH
+  IN_APP
+
+  @@map("notification_channel")
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+
+  @@map("notification_status")
+}
+
+model Notification {
+  id             String              @id @default(uuid(7)) @db.Uuid
+  organizationId String              @map("organization_id") @db.Uuid
+  channel        NotificationChannel
+  template       String              @db.VarChar(80)
+  recipient      String              @db.VarChar(320)
+  payload        Json                @default("{}")
+  status         NotificationStatus  @default(PENDING)
+  attempts       Int                 @default(0)
+  lastError      String?             @map("last_error") @db.VarChar(1000)
+  scheduledAt    DateTime            @default(now()) @map("scheduled_at") @db.Timestamptz(3)
+  sentAt         DateTime?           @map("sent_at") @db.Timestamptz(3)
+  orderId        String?             @map("order_id") @db.Uuid
+  customerId     String?             @map("customer_id") @db.Uuid
+  userId         String?             @map("user_id") @db.Uuid
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  order        Order?       @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  customer     Customer?    @relation(fields: [organizationId, customerId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([status, scheduledAt], where: raw("status = 'PENDING'"), map: "notifications_pending_queue_idx")
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, orderId])
+  @@index([organizationId, customerId])
+  @@index([userId])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String?  @map("organization_id") @db.Uuid
+  actorUserId    String?  @map("actor_user_id") @db.Uuid
+  action         String   @db.VarChar(80)
+  entityType     String   @map("entity_type") @db.VarChar(60)
+  entityId       String?  @map("entity_id") @db.VarChar(64)
+  changes        Json?
+  ipAddress      String?  @map("ip_address") @db.VarChar(45)
+  userAgent      String?  @map("user_agent") @db.VarChar(500)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actorUser    User?         @relation(fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([organizationId, entityType, entityId])
+  @@index([actorUserId])
+  @@map("audit_logs")
+}

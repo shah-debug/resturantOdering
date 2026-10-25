@@ -1,0 +1,129 @@
+model Category {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  name           String    @db.VarChar(120)
+  slug           String    @db.VarChar(80)
+  description    String?   @db.VarChar(500)
+  sortOrder      Int       @default(0) @map("sort_order")
+  isActive       Boolean   @default(true) @map("is_active")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  products     Product[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, slug])
+  @@index([organizationId, sortOrder])
+  @@map("categories")
+}
+
+model Product {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  categoryId     String    @map("category_id") @db.Uuid
+  name           String    @db.VarChar(160)
+  slug           String    @db.VarChar(120)
+  description    String?   @db.VarChar(1000)
+  imageUrl       String?   @map("image_url") @db.VarChar(2048)
+  isAvailable    Boolean   @default(true) @map("is_available")
+  sortOrder      Int       @default(0) @map("sort_order")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  category     Category            @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  variants     ProductVariant[]
+  addOnGroups  ProductAddOnGroup[]
+  orderItems   OrderItem[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, slug])
+  @@index([organizationId, categoryId, sortOrder])
+  @@map("products")
+}
+
+model ProductVariant {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  productId      String    @map("product_id") @db.Uuid
+  name           String    @db.VarChar(80)
+  sku            String?   @db.VarChar(64)
+  priceMinor     Int       @map("price_minor")
+  isDefault      Boolean   @default(false) @map("is_default")
+  isAvailable    Boolean   @default(true) @map("is_available")
+  sortOrder      Int       @default(0) @map("sort_order")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  product      Product      @relation(fields: [organizationId, productId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+  orderItems   OrderItem[]
+
+  @@unique([organizationId, id])
+  @@unique([productId, id])
+  @@unique([organizationId, sku])
+  @@unique([productId], where: { isDefault: true }, map: "product_variants_one_default_per_product_key")
+  @@index([organizationId, productId, sortOrder])
+  @@map("product_variants")
+}
+
+model AddOnGroup {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  name           String    @db.VarChar(120)
+  minSelect      Int       @default(0) @map("min_select")
+  maxSelect      Int       @default(1) @map("max_select")
+  sortOrder      Int       @default(0) @map("sort_order")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  addOns       AddOn[]
+  products     ProductAddOnGroup[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, name])
+  @@map("add_on_groups")
+}
+
+model AddOn {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  addOnGroupId   String    @map("add_on_group_id") @db.Uuid
+  name           String    @db.VarChar(120)
+  priceMinor     Int       @default(0) @map("price_minor")
+  isAvailable    Boolean   @default(true) @map("is_available")
+  sortOrder      Int       @default(0) @map("sort_order")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  addOnGroup      AddOnGroup       @relation(fields: [organizationId, addOnGroupId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+  orderItemAddOns OrderItemAddOn[]
+
+  @@unique([organizationId, id])
+  @@unique([addOnGroupId, name])
+  @@index([organizationId, addOnGroupId, sortOrder])
+  @@map("add_ons")
+}
+
+model ProductAddOnGroup {
+  organizationId String @map("organization_id") @db.Uuid
+  productId      String @map("product_id") @db.Uuid
+  addOnGroupId   String @map("add_on_group_id") @db.Uuid
+  sortOrder      Int    @default(0) @map("sort_order")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  product      Product      @relation(fields: [organizationId, productId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+  addOnGroup   AddOnGroup   @relation(fields: [organizationId, addOnGroupId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@id([productId, addOnGroupId])
+  @@index([organizationId, addOnGroupId])
+  @@map("product_add_on_groups")
+}

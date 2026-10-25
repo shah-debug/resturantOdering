@@ -1,0 +1,184 @@
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+
+  @@map("organization_status")
+}
+
+enum MembershipRole {
+  OWNER
+  MANAGER
+  ORDER_STAFF
+  KITCHEN_STAFF
+  RIDER
+
+  @@map("membership_role")
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+
+  @@map("membership_status")
+}
+
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+  CLOSED
+
+  @@map("branch_status")
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+
+  @@map("subscription_status")
+}
+
+model Organization {
+  id              String             @id @default(uuid(7)) @db.Uuid
+  slug            String             @unique @db.VarChar(63)
+  name            String             @db.VarChar(120)
+  legalName       String?            @map("legal_name") @db.VarChar(200)
+  ntn             String?            @db.VarChar(20)
+  status          OrganizationStatus @default(ACTIVE)
+  currency        String             @default("PKR") @db.Char(3)
+  timezone        String             @default("Asia/Karachi") @db.VarChar(64)
+  contactEmail    String?            @map("contact_email") @db.VarChar(320)
+  contactPhone    String?            @map("contact_phone") @db.VarChar(16)
+  logoUrl         String?            @map("logo_url") @db.VarChar(2048)
+  primaryColor    String?            @map("primary_color") @db.Char(7)
+  lastOrderNumber Int                @default(0) @map("last_order_number")
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  domains            OrganizationDomain[]
+  memberships        Membership[]
+  branches           Branch[]
+  subscriptions      Subscription[]
+  categories         Category[]
+  products           Product[]
+  productVariants    ProductVariant[]
+  addOnGroups        AddOnGroup[]
+  addOns             AddOn[]
+  productAddOnGroups ProductAddOnGroup[]
+  customers          Customer[]
+  customerAddresses  CustomerAddress[]
+  deliveryZones      DeliveryZone[]
+  deliveryZoneAreas  DeliveryZoneArea[]
+  riders             Rider[]
+  promotions         Promotion[]
+  orders             Order[]
+  orderItems         OrderItem[]
+  orderItemAddOns    OrderItemAddOn[]
+  orderStatusHistory OrderStatusHistory[]
+  payments           Payment[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+
+  @@map("organizations")
+}
+
+model OrganizationDomain {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  organizationId    String    @map("organization_id") @db.Uuid
+  hostname          String    @unique @db.VarChar(253)
+  isPrimary         Boolean   @default(false) @map("is_primary")
+  verificationToken String?   @map("verification_token") @db.VarChar(128)
+  verifiedAt        DateTime? @map("verified_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([organizationId], where: { isPrimary: true }, map: "organization_domains_one_primary_key")
+  @@index([organizationId])
+  @@map("organization_domains")
+}
+
+model Membership {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  organizationId  String           @map("organization_id") @db.Uuid
+  userId          String           @map("user_id") @db.Uuid
+  branchId        String?          @map("branch_id") @db.Uuid
+  role            MembershipRole
+  status          MembershipStatus @default(INVITED)
+  invitedAt       DateTime         @default(now()) @map("invited_at") @db.Timestamptz(3)
+  acceptedAt      DateTime?        @map("accepted_at") @db.Timestamptz(3)
+  invitedByUserId String?          @map("invited_by_user_id") @db.Uuid
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  user         User         @relation("MembershipUser", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  invitedBy    User?        @relation("MembershipInviter", fields: [invitedByUserId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+  branch       Branch?      @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  authTokens   AuthToken[]
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([invitedByUserId])
+  @@index([organizationId, branchId])
+  @@map("memberships")
+}
+
+model Branch {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  organizationId    String       @map("organization_id") @db.Uuid
+  name              String       @db.VarChar(120)
+  slug              String       @db.VarChar(63)
+  status            BranchStatus @default(ACTIVE)
+  isAcceptingOrders Boolean      @default(true) @map("is_accepting_orders")
+  phone             String?      @db.VarChar(16)
+  addressLine       String       @map("address_line") @db.VarChar(255)
+  area              String?      @db.VarChar(120)
+  city              String       @db.VarChar(80)
+  latitude          Decimal?     @db.Decimal(9, 6)
+  longitude         Decimal?     @db.Decimal(9, 6)
+  taxRateBps        Int          @default(0) @map("tax_rate_bps")
+  pricesIncludeTax  Boolean      @default(false) @map("prices_include_tax")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  memberships   Membership[]
+  deliveryZones DeliveryZone[]
+  riders        Rider[]
+  orders        Order[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, slug])
+  @@map("branches")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  organizationId     String             @map("organization_id") @db.Uuid
+  planId             String             @map("plan_id") @db.Uuid
+  status             SubscriptionStatus
+  priceMinor         Int                @map("price_minor")
+  currency           String             @default("PKR") @db.Char(3)
+  billingInterval    BillingInterval    @map("billing_interval")
+  currentPeriodStart DateTime           @map("current_period_start") @db.Timestamptz(3)
+  currentPeriodEnd   DateTime           @map("current_period_end") @db.Timestamptz(3)
+  trialEndsAt        DateTime?          @map("trial_ends_at") @db.Timestamptz(3)
+  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
+  canceledAt         DateTime?          @map("canceled_at") @db.Timestamptz(3)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  plan         Plan         @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([organizationId], where: raw("status IN ('TRIALING', 'ACTIVE', 'PAST_DUE')"), map: "subscriptions_one_current_per_organization_key")
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([planId])
+  @@map("subscriptions")
+}

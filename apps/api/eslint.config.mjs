@@ -1,3 +1,5 @@
 import { createBaseConfig } from '@app/config-eslint/base';
 
-export default createBaseConfig(import.meta.dirname);
+const eslintConfig = [{ ignores: ['src/generated/**'] }, ...createBaseConfig(import.meta.dirname)];
+
+export default eslintConfig;

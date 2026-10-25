@@ -16,3 +16,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+apps/api/src/generated/
+
+apps/api/certs/

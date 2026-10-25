@@ -3,4 +3,7 @@ packages:
   - packages/*
 allowBuilds:
   '@parcel/watcher': false
+  '@prisma/engines': true
+  esbuild: false
+  prisma: true
   unrs-resolver: false

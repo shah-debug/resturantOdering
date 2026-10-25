@@ -30,30 +30,41 @@ pnpm install
 cp apps/api/.env.example apps/api/.env
 cp apps/dashboard/.env.example apps/dashboard/.env.local
 cp apps/storefront/.env.example apps/storefront/.env.local
+# fill in DATABASE_URL and DIRECT_URL in apps/api/.env (Supabase development project)
+pnpm codegen
+pnpm --filter @app/api db:migrate:deploy
+pnpm --filter @app/api db:seed   # optional, development only
 pnpm dev
 ```
 
 ## Scripts
 
-| Command          | Purpose                                           |
-| ---------------- | ------------------------------------------------- |
-| `pnpm dev`       | Run the API and both web apps in watch mode       |
-| `pnpm lint`      | ESLint across all workspaces                      |
-| `pnpm typecheck` | TypeScript checks across all workspaces           |
-| `pnpm test`      | Unit and component tests                          |
-| `pnpm test:e2e`  | API end-to-end tests                              |
-| `pnpm build`     | Production builds (web apps require `API_ORIGIN`) |
-| `pnpm verify`    | Everything CI runs, in order                      |
+| Command          | Purpose                                                                 |
+| ---------------- | ----------------------------------------------------------------------- |
+| `pnpm dev`       | Run the API and both web apps in watch mode                             |
+| `pnpm lint`      | ESLint across all workspaces                                            |
+| `pnpm typecheck` | TypeScript checks across all workspaces                                 |
+| `pnpm test`      | Unit and component tests                                                |
+| `pnpm test:e2e`  | API end-to-end tests                                                    |
+| `pnpm test:db`   | Database integrity tests (development database, every test rolled back) |
+| `pnpm codegen`   | Build shared contracts and generate the Prisma client                   |
+| `pnpm build`     | Production builds (web apps require `API_ORIGIN`)                       |
+| `pnpm verify`    | Everything CI runs, in order                                            |
 
 ## Environment
 
-All variables are optional in development; the defaults below apply.
+Only `DATABASE_URL` is required (and `DIRECT_URL` for migrations); other values have the defaults below. See [docs/architecture.md](docs/architecture.md) and [docs/database-design.md](docs/database-design.md).
 
-| Variable                    | App                   | Notes                                                                             |
-| --------------------------- | --------------------- | --------------------------------------------------------------------------------- |
-| `NODE_ENV`                  | api                   | `development`, `test` or `production`                                             |
-| `PORT`                      | api                   | Defaults to `4000`                                                                |
-| `TRUST_PROXY_HOPS`          | api                   | Proxies in front of the API (Next.js counts as one). Defaults to `1`              |
-| `RATE_LIMIT_WINDOW_SECONDS` | api                   | Rate-limit window per client IP. Defaults to `60`                                 |
-| `RATE_LIMIT_MAX_REQUESTS`   | api                   | Requests allowed per window. Defaults to `100`                                    |
-| `API_ORIGIN`                | dashboard, storefront | API base URL for the `/api/*` rewrite; required for `next build` and `next start` |
+| Variable                         | App                   | Notes                                                                             |
+| -------------------------------- | --------------------- | --------------------------------------------------------------------------------- |
+| `NODE_ENV`                       | api                   | `development`, `test` or `production`                                             |
+| `PORT`                           | api                   | Defaults to `4000`                                                                |
+| `TRUST_PROXY_HOPS`               | api                   | Proxies in front of the API (Next.js counts as one). Defaults to `1`              |
+| `RATE_LIMIT_WINDOW_SECONDS`      | api                   | Rate-limit window per client IP. Defaults to `60`                                 |
+| `RATE_LIMIT_MAX_REQUESTS`        | api                   | Requests allowed per window. Defaults to `100`                                    |
+| `DATABASE_URL`                   | api                   | Supabase pooler URL used at runtime. Required                                     |
+| `DIRECT_URL`                     | api (Prisma CLI)      | Direct or session-pooler URL used for migrations                                  |
+| `DATABASE_POOL_MAX`              | api                   | Maximum pooled connections. Defaults to `10`                                      |
+| `DATABASE_CONNECTION_TIMEOUT_MS` | api                   | Defaults to `5000`                                                                |
+| `DATABASE_HEALTH_TIMEOUT_MS`     | api                   | Readiness query timeout. Defaults to `2000`                                       |
+| `API_ORIGIN`                     | dashboard, storefront | API base URL for the `/api/*` rewrite; required for `next build` and `next start` |

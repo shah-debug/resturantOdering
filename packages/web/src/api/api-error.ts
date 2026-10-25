@@ -16,6 +16,17 @@ export function toApiError(
   return parsed.success ? parsed.data : null;
 }
 
+export function getFieldErrors(
+  error: FetchBaseQueryError | SerializedError | undefined,
+): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+  for (const detail of toApiError(error)?.details ?? []) {
+    const field = detail.field.split('.').at(-1) ?? detail.field;
+    fieldErrors[field] ??= detail.message;
+  }
+  return fieldErrors;
+}
+
 export function getErrorMessage(error: FetchBaseQueryError | SerializedError | undefined): string {
   const apiError = toApiError(error);
   if (apiError) {

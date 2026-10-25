@@ -1,0 +1,271 @@
+enum PromotionType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_DELIVERY
+
+  @@map("promotion_type")
+}
+
+enum OrderType {
+  DELIVERY
+  PICKUP
+
+  @@map("order_type")
+}
+
+enum OrderChannel {
+  STOREFRONT
+  DASHBOARD
+
+  @@map("order_channel")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERY_FAILED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REJECTED
+
+  @@map("order_status")
+}
+
+enum StatusActorType {
+  SYSTEM
+  STAFF
+  CUSTOMER
+  RIDER
+
+  @@map("status_actor_type")
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  JAZZCASH
+  EASYPAISA
+  BANK_TRANSFER
+
+  @@map("payment_method")
+}
+
+enum OrderPaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+
+  @@map("order_payment_status")
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  PARTIALLY_REFUNDED
+  REFUNDED
+
+  @@map("payment_status")
+}
+
+model Promotion {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  organizationId   String        @map("organization_id") @db.Uuid
+  code             String        @db.VarChar(40)
+  name             String        @db.VarChar(120)
+  description      String?       @db.VarChar(500)
+  type             PromotionType
+  percentBps       Int?          @map("percent_bps")
+  amountMinor      Int?          @map("amount_minor")
+  maxDiscountMinor Int?          @map("max_discount_minor")
+  minOrderMinor    Int           @default(0) @map("min_order_minor")
+  startsAt         DateTime      @map("starts_at") @db.Timestamptz(3)
+  endsAt           DateTime?     @map("ends_at") @db.Timestamptz(3)
+  usageLimit       Int?          @map("usage_limit")
+  perCustomerLimit Int?          @map("per_customer_limit")
+  timesRedeemed    Int           @default(0) @map("times_redeemed")
+  isActive         Boolean       @default(true) @map("is_active")
+  archivedAt       DateTime?     @map("archived_at") @db.Timestamptz(3)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  orders       Order[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, code])
+  @@map("promotions")
+}
+
+model Order {
+  id                      String             @id @default(uuid(7)) @db.Uuid
+  organizationId          String             @map("organization_id") @db.Uuid
+  branchId                String             @map("branch_id") @db.Uuid
+  customerId              String             @map("customer_id") @db.Uuid
+  orderNumber             Int                @map("order_number")
+  type                    OrderType
+  channel                 OrderChannel       @default(STOREFRONT)
+  status                  OrderStatus        @default(PENDING)
+  statusChangedAt         DateTime           @default(now()) @map("status_changed_at") @db.Timestamptz(3)
+  paymentMethod           PaymentMethod      @map("payment_method")
+  paymentStatus           OrderPaymentStatus @default(UNPAID) @map("payment_status")
+  currency                String             @default("PKR") @db.Char(3)
+  subtotalMinor           Int                @map("subtotal_minor")
+  discountMinor           Int                @default(0) @map("discount_minor")
+  taxMinor                Int                @default(0) @map("tax_minor")
+  taxRateBps              Int                @default(0) @map("tax_rate_bps")
+  pricesIncludeTax        Boolean            @default(false) @map("prices_include_tax")
+  deliveryFeeMinor        Int                @default(0) @map("delivery_fee_minor")
+  deliveryDiscountMinor   Int                @default(0) @map("delivery_discount_minor")
+  roundingAdjustmentMinor Int                @default(0) @map("rounding_adjustment_minor")
+  totalMinor              Int                @map("total_minor")
+  promotionId             String?            @map("promotion_id") @db.Uuid
+  promotionCode           String?            @map("promotion_code") @db.VarChar(40)
+  customerName            String             @map("customer_name") @db.VarChar(120)
+  customerPhone           String             @map("customer_phone") @db.VarChar(16)
+  deliveryZoneId          String?            @map("delivery_zone_id") @db.Uuid
+  deliveryAddressLine     String?            @map("delivery_address_line") @db.VarChar(255)
+  deliveryArea            String?            @map("delivery_area") @db.VarChar(120)
+  deliveryCity            String?            @map("delivery_city") @db.VarChar(80)
+  deliveryLandmark        String?            @map("delivery_landmark") @db.VarChar(160)
+  deliveryLatitude        Decimal?           @map("delivery_latitude") @db.Decimal(9, 6)
+  deliveryLongitude       Decimal?           @map("delivery_longitude") @db.Decimal(9, 6)
+  deliveryInstructions    String?            @map("delivery_instructions") @db.VarChar(500)
+  riderId                 String?            @map("rider_id") @db.Uuid
+  customerNote            String?            @map("customer_note") @db.VarChar(500)
+  cancellationReason      String?            @map("cancellation_reason") @db.VarChar(500)
+  idempotencyKey          String?            @map("idempotency_key") @db.VarChar(64)
+  scheduledFor            DateTime?          @map("scheduled_for") @db.Timestamptz(3)
+  placedAt                DateTime           @default(now()) @map("placed_at") @db.Timestamptz(3)
+  completedAt             DateTime?          @map("completed_at") @db.Timestamptz(3)
+  cancelledAt             DateTime?          @map("cancelled_at") @db.Timestamptz(3)
+  createdAt               DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization  Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch        Branch               @relation(fields: [organizationId, branchId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  customer      Customer             @relation(fields: [organizationId, customerId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  deliveryZone  DeliveryZone?        @relation(fields: [organizationId, deliveryZoneId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  rider         Rider?               @relation(fields: [organizationId, riderId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  promotion     Promotion?           @relation(fields: [organizationId, promotionId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  payments      Payment[]
+  notifications Notification[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, orderNumber])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, placedAt(sort: Desc)])
+  @@index([organizationId, branchId, status, placedAt(sort: Desc)])
+  @@index([organizationId, customerId, placedAt(sort: Desc)])
+  @@index([organizationId, riderId, status])
+  @@index([organizationId, deliveryZoneId])
+  @@index([organizationId, promotionId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  organizationId    String   @map("organization_id") @db.Uuid
+  orderId           String   @map("order_id") @db.Uuid
+  productId         String   @map("product_id") @db.Uuid
+  variantId         String   @map("variant_id") @db.Uuid
+  productName       String   @map("product_name") @db.VarChar(160)
+  variantName       String   @map("variant_name") @db.VarChar(80)
+  quantity          Int
+  unitPriceMinor    Int      @map("unit_price_minor")
+  addOnsTotalMinor  Int      @default(0) @map("add_ons_total_minor")
+  lineSubtotalMinor Int      @map("line_subtotal_minor")
+  discountMinor     Int      @default(0) @map("discount_minor")
+  taxMinor          Int      @default(0) @map("tax_minor")
+  note              String?  @db.VarChar(255)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  order        Order            @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+  product      Product          @relation(fields: [organizationId, productId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  variant      ProductVariant   @relation(fields: [productId, variantId], references: [productId, id], onDelete: Restrict, onUpdate: Restrict)
+  addOns       OrderItemAddOn[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, orderId])
+  @@index([organizationId, productId])
+  @@index([productId, variantId])
+  @@map("order_items")
+}
+
+model OrderItemAddOn {
+  id             String @id @default(uuid(7)) @db.Uuid
+  organizationId String @map("organization_id") @db.Uuid
+  orderItemId    String @map("order_item_id") @db.Uuid
+  addOnId        String @map("add_on_id") @db.Uuid
+  groupName      String @map("group_name") @db.VarChar(120)
+  name           String @db.VarChar(120)
+  unitPriceMinor Int    @map("unit_price_minor")
+  quantity       Int    @default(1)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  orderItem    OrderItem    @relation(fields: [organizationId, orderItemId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+  addOn        AddOn        @relation(fields: [organizationId, addOnId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([organizationId, orderItemId])
+  @@index([organizationId, addOnId])
+  @@map("order_item_add_ons")
+}
+
+model OrderStatusHistory {
+  id              BigInt          @id @default(autoincrement())
+  organizationId  String          @map("organization_id") @db.Uuid
+  orderId         String          @map("order_id") @db.Uuid
+  fromStatus      OrderStatus?    @map("from_status")
+  toStatus        OrderStatus     @map("to_status")
+  actorType       StatusActorType @map("actor_type")
+  changedByUserId String?         @map("changed_by_user_id") @db.Uuid
+  note            String?         @db.VarChar(500)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  order         Order        @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Cascade, onUpdate: Restrict)
+  changedByUser User?        @relation(fields: [changedByUserId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([organizationId, orderId, id])
+  @@index([changedByUserId])
+  @@map("order_status_history")
+}
+
+model Payment {
+  id                  String        @id @default(uuid(7)) @db.Uuid
+  organizationId      String        @map("organization_id") @db.Uuid
+  orderId             String        @map("order_id") @db.Uuid
+  method              PaymentMethod
+  status              PaymentStatus @default(PENDING)
+  amountMinor         Int           @map("amount_minor")
+  refundedAmountMinor Int           @default(0) @map("refunded_amount_minor")
+  currency            String        @default("PKR") @db.Char(3)
+  providerReference   String?       @map("provider_reference") @db.VarChar(128)
+  failureReason       String?       @map("failure_reason") @db.VarChar(500)
+  collectedByRiderId  String?       @map("collected_by_rider_id") @db.Uuid
+  paidAt              DateTime?     @map("paid_at") @db.Timestamptz(3)
+  refundedAt          DateTime?     @map("refunded_at") @db.Timestamptz(3)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  order            Order        @relation(fields: [organizationId, orderId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  collectedByRider Rider?       @relation(fields: [organizationId, collectedByRiderId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, method, providerReference])
+  @@index([organizationId, orderId])
+  @@index([organizationId, status, createdAt(sort: Desc)])
+  @@index([organizationId, collectedByRiderId])
+  @@map("payments")
+}

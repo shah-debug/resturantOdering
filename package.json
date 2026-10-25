@@ -6,16 +6,17 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @app/contracts build && pnpm --parallel --filter \"./apps/*\" dev",
-    "build": "pnpm -r build",
-    "prepare:contracts": "pnpm --filter @app/contracts build",
-    "lint": "pnpm prepare:contracts && pnpm -r lint",
-    "typecheck": "pnpm prepare:contracts && pnpm -r typecheck",
-    "test": "pnpm prepare:contracts && pnpm -r test",
-    "test:e2e": "pnpm prepare:contracts && pnpm --filter @app/api test:e2e",
+    "codegen": "pnpm --filter @app/contracts build && pnpm --filter @app/api db:generate",
+    "dev": "pnpm codegen && pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm codegen && pnpm -r --workspace-concurrency=1 build",
+    "lint": "pnpm codegen && pnpm -r --workspace-concurrency=1 lint",
+    "typecheck": "pnpm codegen && pnpm -r --workspace-concurrency=1 typecheck",
+    "test": "pnpm codegen && pnpm -r --workspace-concurrency=1 test",
+    "test:e2e": "pnpm codegen && pnpm --filter @app/api test:e2e",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build"
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm test:integration && pnpm build",
+    "test:integration": "pnpm codegen && pnpm --filter @app/api test:integration"
   },
   "devDependencies": {
     "prettier": "3.9.10"
