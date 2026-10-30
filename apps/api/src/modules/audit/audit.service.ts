@@ -41,6 +41,11 @@ export const AuditAction = {
   OrderRiderAssigned: 'order.rider_assigned',
   RiderCreated: 'rider.created',
   RiderUpdated: 'rider.updated',
+  ReportExported: 'report.orders_exported',
+  PlatformOrganizationStatusChanged: 'platform.organization_status_changed',
+  PlatformSubscriptionAssigned: 'platform.subscription_assigned',
+  PlatformPlanCreated: 'platform.plan_created',
+  PlatformOrganizationsExported: 'platform.organizations_exported',
 } as const;
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];

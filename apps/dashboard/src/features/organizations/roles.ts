@@ -80,3 +80,7 @@ const RIDER_READERS: readonly MembershipRole[] = ['OWNER', 'MANAGER', 'ORDER_STA
 export function canReadRiders(role: MembershipRole | undefined): boolean {
   return role !== undefined && RIDER_READERS.includes(role);
 }
+
+export function canReadReports(role: MembershipRole | undefined): boolean {
+  return canManageRestaurant(role);
+}

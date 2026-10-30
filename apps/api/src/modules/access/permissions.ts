@@ -14,6 +14,7 @@ export const Permission = {
   KitchenUpdate: 'kitchen:update',
   RidersRead: 'riders:read',
   RidersManage: 'riders:manage',
+  ReportsRead: 'reports:read',
   DeliveriesReadAssigned: 'deliveries:read-assigned',
   DeliveriesUpdateAssigned: 'deliveries:update-assigned',
   AuditRead: 'audit:read',
@@ -57,6 +58,7 @@ export const PLATFORM_ROLE_PERMISSIONS: Readonly<Record<PlatformRole, readonly P
     Permission.MenuRead,
     Permission.OrdersRead,
     Permission.RidersRead,
+    Permission.ReportsRead,
     Permission.AuditRead,
   ],
 };

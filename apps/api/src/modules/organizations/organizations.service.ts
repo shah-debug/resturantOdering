@@ -2,7 +2,6 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   type Organization,
   organizationSlugSchema,
-  type Paginated,
   RESERVED_ORGANIZATION_SLUGS,
   type SlugAvailability,
 } from '@app/contracts';
@@ -101,19 +100,6 @@ export class OrganizationsService {
       select: organizationSelect,
     });
     return organizations.map(toOrganization);
-  }
-
-  async listAll(page: number, pageSize: number): Promise<Paginated<Organization>> {
-    const [total, organizations] = await this.prisma.$transaction([
-      this.prisma.organization.count(),
-      this.prisma.organization.findMany({
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        select: organizationSelect,
-      }),
-    ]);
-    return { items: organizations.map(toOrganization), page, pageSize, total };
   }
 
   async get(organizationId: string): Promise<Organization> {

@@ -10,4 +10,6 @@ export * from './money.js';
 export * from './onboarding.js';
 export * from './order-operations.js';
 export * from './organizations.js';
+export * from './platform.js';
+export * from './reports.js';
 export * from './storefront.js';

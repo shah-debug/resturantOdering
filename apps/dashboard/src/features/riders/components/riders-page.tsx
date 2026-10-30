@@ -106,7 +106,9 @@ function RiderFormDialog({
             ? 'Enter a valid mobile number, e.g. 0300 1234567'
             : field === 'fullName'
               ? 'Enter the rider’s name'
-              : issue.message;
+              : field === 'branchId'
+                ? 'Choose a branch'
+                : issue.message;
       }
       setErrors(next);
       return;
@@ -205,7 +207,7 @@ function RiderFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || !branchId}>
               {saving ? 'Saving…' : rider ? 'Save rider' : 'Add rider'}
             </Button>
           </DialogFooter>

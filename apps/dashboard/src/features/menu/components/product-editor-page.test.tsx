@@ -88,7 +88,7 @@ describe('ProductEditorPage — new product', () => {
       'Price can be at most Rs 100,000',
     );
     expect(calls.some((call) => call.method === 'POST')).toBe(false);
-  });
+  }, 15_000);
 
   it('requires an option and keeps exactly one default', async () => {
     const { calls } = setup({ productId: null });

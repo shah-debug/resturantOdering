@@ -1,6 +1,6 @@
 'use client';
 
-import { KeyRound, LogOut, MonitorSmartphone } from 'lucide-react';
+import { KeyRound, LogOut, MonitorSmartphone, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import {
   Avatar,
@@ -40,6 +40,14 @@ export function AccountMenu() {
           <span className="truncate text-xs text-muted-foreground">{me.user.email}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {me.user.platformRole ? (
+          <DropdownMenuItem asChild>
+            <Link href="/platform">
+              <ShieldCheck aria-hidden="true" />
+              Platform admin
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem asChild>
           <Link href="/account/password">
             <KeyRound aria-hidden="true" />

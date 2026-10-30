@@ -49,28 +49,28 @@ Single-use, random 256-bit tokens; only the SHA-256 hash is stored in `auth_toke
 
 All under `/api/v1`. Errors use the standard envelope (`packages/contracts/src/errors.ts`).
 
-| Method | Path                                                   | Auth                  | Notes                                   |
-| ------ | ------------------------------------------------------ | --------------------- | --------------------------------------- |
-| POST   | `/auth/signup`                                         | public, rate-limited  | `202` always                            |
-| POST   | `/auth/email/verify`                                   | public, rate-limited  | `400 INVALID_TOKEN` if used/expired     |
-| POST   | `/auth/email/resend`                                   | public, rate-limited  | `202` always                            |
-| POST   | `/auth/login`                                          | public, rate-limited  | Sets cookie, returns `MeResponse`       |
-| POST   | `/auth/logout`                                         | session               | Revokes current session, clears cookie  |
-| POST   | `/auth/logout-all`                                     | session               | Revokes every session of the user       |
-| GET    | `/auth/me`                                             | session               | User plus active memberships            |
-| POST   | `/auth/password/forgot`                                | public, rate-limited  | `202` always                            |
-| POST   | `/auth/password/reset`                                 | public, rate-limited  | Revokes all sessions                    |
-| POST   | `/auth/password/change`                                | session, rate-limited | Revokes all other sessions              |
-| POST   | `/auth/invitations/accept`                             | public, rate-limited  |                                         |
-| POST   | `/organizations`                                       | session               | Creator becomes `OWNER`                 |
-| GET    | `/organizations`                                       | session               | Organizations with an active membership |
-| GET    | `/organizations/:organizationId`                       | `organization:read`   |                                         |
-| PATCH  | `/organizations/:organizationId`                       | `organization:update` |                                         |
-| GET    | `/organizations/:organizationId/members`               | `members:read`        | Paginated (`page`, `pageSize` ≤ 100)    |
-| POST   | `/organizations/:organizationId/members`               | `members:manage`      | Invites by email                        |
-| PATCH  | `/organizations/:organizationId/members/:membershipId` | `members:manage`      | Role, status, branch                    |
-| DELETE | `/organizations/:organizationId/members/:membershipId` | `members:manage`      | Removes access immediately              |
-| GET    | `/platform/organizations`                              | platform role         | `SUPER_ADMIN`, `SUPPORT`                |
+| Method | Path                                                                   | Auth                  | Notes                                   |
+| ------ | ---------------------------------------------------------------------- | --------------------- | --------------------------------------- |
+| POST   | `/auth/signup`                                                         | public, rate-limited  | `202` always                            |
+| POST   | `/auth/email/verify`                                                   | public, rate-limited  | `400 INVALID_TOKEN` if used/expired     |
+| POST   | `/auth/email/resend`                                                   | public, rate-limited  | `202` always                            |
+| POST   | `/auth/login`                                                          | public, rate-limited  | Sets cookie, returns `MeResponse`       |
+| POST   | `/auth/logout`                                                         | session               | Revokes current session, clears cookie  |
+| POST   | `/auth/logout-all`                                                     | session               | Revokes every session of the user       |
+| GET    | `/auth/me`                                                             | session               | User plus active memberships            |
+| POST   | `/auth/password/forgot`                                                | public, rate-limited  | `202` always                            |
+| POST   | `/auth/password/reset`                                                 | public, rate-limited  | Revokes all sessions                    |
+| POST   | `/auth/password/change`                                                | session, rate-limited | Revokes all other sessions              |
+| POST   | `/auth/invitations/accept`                                             | public, rate-limited  |                                         |
+| POST   | `/organizations`                                                       | session               | Creator becomes `OWNER`                 |
+| GET    | `/organizations`                                                       | session               | Organizations with an active membership |
+| GET    | `/organizations/:organizationId`                                       | `organization:read`   |                                         |
+| PATCH  | `/organizations/:organizationId`                                       | `organization:update` |                                         |
+| GET    | `/organizations/:organizationId/members`                               | `members:read`        | Paginated (`page`, `pageSize` ≤ 100)    |
+| POST   | `/organizations/:organizationId/members`                               | `members:manage`      | Invites by email                        |
+| PATCH  | `/organizations/:organizationId/members/:membershipId`                 | `members:manage`      | Role, status, branch                    |
+| DELETE | `/organizations/:organizationId/members/:membershipId`                 | `members:manage`      | Removes access immediately              |
+| GET    | `/platform/*` (see [reports-and-platform.md](reports-and-platform.md)) | platform role         | Changes need `SUPER_ADMIN`              |
 
 ## Authorization
 

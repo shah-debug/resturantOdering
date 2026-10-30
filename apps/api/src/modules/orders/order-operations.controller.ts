@@ -71,7 +71,9 @@ export class OrderOperationsController {
     const heartbeat = interval(SSE_HEARTBEAT_MS).pipe(
       map((): MessageEvent => ({ type: 'ping', data: { at: new Date().toISOString() } })),
     );
-    return merge(ready, orders, heartbeat).pipe(takeUntil(timer(SSE_MAX_CONNECTION_MS)));
+    return this.events.track(
+      merge(ready, orders, heartbeat).pipe(takeUntil(timer(SSE_MAX_CONNECTION_MS))),
+    );
   }
 
   @Get(':orderId')

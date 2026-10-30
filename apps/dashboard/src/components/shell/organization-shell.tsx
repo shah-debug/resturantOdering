@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  BarChart3,
   Bike,
   ChefHat,
   LayoutDashboard,
@@ -26,6 +27,7 @@ import {
   canManageTeam,
   canReadMenu,
   canReadOrders,
+  canReadReports,
   canReadRiders,
 } from '@/features/organizations/roles';
 import { useGetOnboardingStatusQuery } from '@/features/restaurant/restaurant-api';
@@ -43,6 +45,7 @@ const SECTION_LABELS: Record<string, string> = {
   orders: 'Orders',
   kitchen: 'Kitchen',
   riders: 'Riders',
+  reports: 'Reports',
   menu: 'Menu',
   members: 'Team',
   settings: 'Settings',
@@ -99,6 +102,9 @@ export function OrganizationShell({
       : []),
     ...(canReadRiders(membership?.role)
       ? [{ href: `${base}/riders`, label: 'Riders', icon: Bike }]
+      : []),
+    ...(canReadReports(membership?.role)
+      ? [{ href: `${base}/reports`, label: 'Reports', icon: BarChart3 }]
       : []),
     ...(canReadMenu(membership?.role)
       ? [{ href: `${base}/menu`, label: 'Menu', icon: UtensilsCrossed }]

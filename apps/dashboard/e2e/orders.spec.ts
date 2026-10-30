@@ -228,4 +228,52 @@ test.describe('restaurant order operations', () => {
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
     await expect(receipt).toBeVisible();
   });
+  test('reports completed sales and exports orders without customer details', async ({
+    page,
+    request,
+  }) => {
+    const pickup = await placeOrder(request, seeded, 'PICKUP');
+    const cancelled = await placeOrder(request, seeded, 'DELIVERY');
+    const path = (orderId: string) =>
+      `/organizations/${seeded.organizationId}/orders/${orderId}/transitions`;
+    for (const [expectedStatus, to] of [
+      ['PENDING', 'CONFIRMED'],
+      ['CONFIRMED', 'PREPARING'],
+      ['PREPARING', 'READY'],
+      ['READY', 'COMPLETED'],
+    ]) {
+      await call(request, 'post', path(pickup.orderId), { to, expectedStatus });
+    }
+    await call(request, 'post', path(cancelled.orderId), {
+      to: 'CANCELLED',
+      expectedStatus: 'PENDING',
+      reason: 'Customer called',
+    });
+
+    await signIn(page, email);
+    await expect(page).toHaveURL(/\/organizations\//);
+    await page.goto(`/organizations/${seeded.organizationId}/reports`);
+    await page.getByLabel('Period').selectOption('today');
+    const orders = page.getByRole('region', { name: 'Orders' });
+    await expect(orders.getByText('Completed', { exact: true }).locator('..')).toContainText('1');
+    await expect(orders.getByText('Cancelled or rejected').locator('..')).toContainText('1');
+    const sales = page.getByRole('region', { name: 'Sales from completed orders' });
+    await expect(sales.getByText('Rs 3,000').first()).toBeVisible();
+    await expect(page.getByText(/These figures are sales, not profit/)).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Chicken Karahi' })).toBeVisible();
+
+    const download = page.waitForEvent('download');
+    await page.getByRole('link', { name: /Export orders/ }).click();
+    const file = await download;
+    const stream = await file.createReadStream();
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(Buffer.from(chunk as Uint8Array));
+    }
+    const csv = Buffer.concat(chunks).toString('utf8');
+    expect(csv.trim().split(/\r\n/)).toHaveLength(3);
+    expect(csv).toContain('COMPLETED');
+    expect(csv).not.toContain('Bilal Ahmed');
+    expect(csv).not.toContain('+923009876543');
+  });
 });

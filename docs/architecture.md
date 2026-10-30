@@ -60,16 +60,16 @@ Tenant isolation is a security requirement, enforced in layers:
 
 ## Delivery phases
 
-| Phase | Scope                                                                             | State |
-| ----- | --------------------------------------------------------------------------------- | ----- |
-| 0     | Monorepo, tooling, CI, security headers, CSP, rate limiting                       | Done  |
-| 1     | Supabase + Prisma foundation, schema, migrations, seed, readiness                 | Done  |
-| 2     | Staff authentication (HTTP-only cookie sessions, CSRF), RBAC, organization access | Done  |
-| 3     | Dashboard shell, onboarding, organization and branch settings                     | Done  |
-| 4     | Menu management (see [menu.md](menu.md))                                          | Done  |
-| 5     | Storefront: public menu and cart (see [storefront.md](storefront.md))             | Done  |
-| 6     | Guest checkout and order placement (see [checkout.md](checkout.md))               | Done  |
-| 7     | Order operations, kitchen, riders and live updates (see [orders.md](orders.md))   | Done  |
-| 8     | Riders and delivery                                                               |       |
-| 9     | Online payments and notifications                                                 |       |
-| 10    | Platform admin, billing                                                           |       |
+| Phase | Scope                                                                               | State |
+| ----- | ----------------------------------------------------------------------------------- | ----- |
+| 0     | Monorepo, tooling, CI, security headers, CSP, rate limiting                         | Done  |
+| 1     | Supabase + Prisma foundation, schema, migrations, seed, readiness                   | Done  |
+| 2     | Staff authentication (HTTP-only cookie sessions, CSRF), RBAC, organization access   | Done  |
+| 3     | Dashboard shell, onboarding, organization and branch settings                       | Done  |
+| 4     | Menu management (see [menu.md](menu.md))                                            | Done  |
+| 5     | Storefront: public menu and cart (see [storefront.md](storefront.md))               | Done  |
+| 6     | Guest checkout and order placement (see [checkout.md](checkout.md))                 | Done  |
+| 7     | Order operations, kitchen, riders and live updates (see [orders.md](orders.md))     | Done  |
+| 8     | Riders and delivery                                                                 |       |
+| 9     | Online payments and notifications                                                   |       |
+| 10    | Reports and platform admin (see [reports-and-platform.md](reports-and-platform.md)) | Done  |

@@ -1,6 +1,6 @@
 import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
 import type { OrderEvent } from '@app/contracts';
-import { filter, map, type Observable, Subject } from 'rxjs';
+import { defer, filter, finalize, map, type Observable, Subject } from 'rxjs';
 
 interface Envelope {
   organizationId: string;
@@ -11,6 +11,22 @@ interface Envelope {
 export class OrderEventsService implements OnModuleDestroy {
   private readonly logger = new Logger(OrderEventsService.name);
   private readonly events = new Subject<Envelope>();
+  private connections = 0;
+
+  get connectionCount(): number {
+    return this.connections;
+  }
+
+  track<T>(source: Observable<T>): Observable<T> {
+    return defer(() => {
+      this.connections += 1;
+      return source.pipe(
+        finalize(() => {
+          this.connections -= 1;
+        }),
+      );
+    });
+  }
 
   publish(organizationId: string, event: OrderEvent): void {
     try {
