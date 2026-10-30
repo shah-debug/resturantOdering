@@ -37,6 +37,10 @@ export const AuditAction = {
   AddOnGroupCreated: 'menu.add_on_group_created',
   AddOnGroupUpdated: 'menu.add_on_group_updated',
   AddOnGroupArchived: 'menu.add_on_group_archived',
+  OrderStatusChanged: 'order.status_changed',
+  OrderRiderAssigned: 'order.rider_assigned',
+  RiderCreated: 'rider.created',
+  RiderUpdated: 'rider.updated',
 } as const;
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];

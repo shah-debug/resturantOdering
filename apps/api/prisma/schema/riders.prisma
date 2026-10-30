@@ -46,6 +46,7 @@ model Rider {
   @@unique([organizationId, phone])
   @@unique([organizationId, userId])
   @@index([organizationId, branchId, availability])
+  @@index([organizationId, branchId, status])
   @@index([userId])
   @@map("riders")
 }

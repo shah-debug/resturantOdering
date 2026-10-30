@@ -12,6 +12,8 @@ export const Permission = {
   OrdersRead: 'orders:read',
   OrdersManage: 'orders:manage',
   KitchenUpdate: 'kitchen:update',
+  RidersRead: 'riders:read',
+  RidersManage: 'riders:manage',
   DeliveriesReadAssigned: 'deliveries:read-assigned',
   DeliveriesUpdateAssigned: 'deliveries:update-assigned',
   AuditRead: 'audit:read',
@@ -30,6 +32,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<MembershipRole, readonly Permissi
     Permission.MenuRead,
     Permission.OrdersRead,
     Permission.OrdersManage,
+    Permission.RidersRead,
   ],
   [MembershipRole.KITCHEN_STAFF]: [
     Permission.OrganizationRead,
@@ -53,6 +56,7 @@ export const PLATFORM_ROLE_PERMISSIONS: Readonly<Record<PlatformRole, readonly P
     Permission.BranchesRead,
     Permission.MenuRead,
     Permission.OrdersRead,
+    Permission.RidersRead,
     Permission.AuditRead,
   ],
 };

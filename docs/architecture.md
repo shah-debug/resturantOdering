@@ -69,7 +69,7 @@ Tenant isolation is a security requirement, enforced in layers:
 | 4     | Menu management (see [menu.md](menu.md))                                          | Done  |
 | 5     | Storefront: public menu and cart (see [storefront.md](storefront.md))             | Done  |
 | 6     | Guest checkout and order placement (see [checkout.md](checkout.md))               | Done  |
-| 7     | Order operations and live updates                                                 |       |
+| 7     | Order operations, kitchen, riders and live updates (see [orders.md](orders.md))   | Done  |
 | 8     | Riders and delivery                                                               |       |
 | 9     | Online payments and notifications                                                 |       |
 | 10    | Platform admin, billing                                                           |       |

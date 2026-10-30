@@ -63,3 +63,20 @@ export function canReadMenu(role: MembershipRole | undefined): boolean {
 export function canManageMenu(role: MembershipRole | undefined): boolean {
   return canManageRestaurant(role);
 }
+
+const ORDER_READERS: readonly MembershipRole[] = [
+  'OWNER',
+  'MANAGER',
+  'ORDER_STAFF',
+  'KITCHEN_STAFF',
+];
+
+export function canReadOrders(role: MembershipRole | undefined): boolean {
+  return role !== undefined && ORDER_READERS.includes(role);
+}
+
+const RIDER_READERS: readonly MembershipRole[] = ['OWNER', 'MANAGER', 'ORDER_STAFF'];
+
+export function canReadRiders(role: MembershipRole | undefined): boolean {
+  return role !== undefined && RIDER_READERS.includes(role);
+}

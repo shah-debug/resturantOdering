@@ -49,6 +49,10 @@ export class AppConfig {
 
   constructor(private readonly env: Env) {}
 
+  get notificationDispatchIntervalSeconds(): number {
+    return this.env.NODE_ENV === 'test' ? 0 : this.env.NOTIFICATION_DISPATCH_INTERVAL_SECONDS;
+  }
+
   get orderTrackingSecret(): string {
     return this.env.ORDER_TRACKING_SECRET ?? this.fallbackTrackingSecret;
   }

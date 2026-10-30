@@ -18,6 +18,7 @@ import { AppConfig } from '../../config/app-config.js';
 import { isUniqueViolation } from '../../database/prisma-errors.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
+import { enqueueOrderPlacedEmail } from '../notifications/notification-outbox.js';
 import { publishedOrganization } from '../storefront/storefront-menu.js';
 import {
   type CheckoutEvaluation,
@@ -26,6 +27,7 @@ import {
 } from './checkout-evaluator.js';
 import { canTransitionOrderStatus, INITIAL_ORDER_STATUS } from './domain/order-status.js';
 import { createTrackingToken, verifyTrackingToken } from './domain/tracking-token.js';
+import { OrderEventsService } from './order-events.service.js';
 
 const organizationSelect = {
   id: true,
@@ -33,11 +35,13 @@ const organizationSelect = {
   name: true,
   currency: true,
   timezone: true,
+  contactEmail: true,
 } satisfies Prisma.OrganizationSelect;
 
 const trackingSelect = {
   id: true,
   organizationId: true,
+  branchId: true,
   orderNumber: true,
   status: true,
   type: true,
@@ -126,9 +130,12 @@ export class CheckoutService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
+    private readonly events: OrderEventsService,
   ) {}
 
-  private async publishedRestaurant(slug: string): Promise<CheckoutOrganization> {
+  private async publishedRestaurant(
+    slug: string,
+  ): Promise<CheckoutOrganization & { contactEmail: string | null }> {
     if (!isStorefrontSlug(slug)) {
       throw restaurantNotFound();
     }
@@ -340,16 +347,36 @@ export class CheckoutService {
             },
           });
 
+          await enqueueOrderPlacedEmail(tx, organization.id, organization.contactEmail, {
+            orderId,
+            orderNumber: numbered.last_order_number,
+            restaurantName: organization.name,
+            customerName: input.customer.name,
+            type: input.fulfillment.type,
+            totalMinor: pricing.totalMinor,
+            itemCount: evaluation.lines.reduce((sum, line) => sum + line.quantity, 0),
+          });
+
           return {
             orderId,
             orderNumber: numbered.last_order_number,
+            branchId: branch.id,
             trackingToken: this.token(organization.id, orderId),
             totalMinor: pricing.totalMinor,
           };
         },
         { timeout: 15_000 },
       );
-      return { order, replayed: false };
+      const { branchId, ...placed } = order;
+      this.events.publish(organization.id, {
+        type: 'order.created',
+        orderId: placed.orderId,
+        orderNumber: placed.orderNumber,
+        branchId,
+        status: INITIAL_ORDER_STATUS,
+        at: now.toISOString(),
+      });
+      return { order: placed, replayed: false };
     } catch (error) {
       if (isUniqueViolation(error)) {
         const existing = await this.findReplay(organization.id, key.data, requestFingerprint);
@@ -465,6 +492,14 @@ export class CheckoutService {
         where: { orderId: order.id, organizationId: order.organizationId, status: 'PENDING' },
         data: { status: 'CANCELLED' },
       });
+    });
+    this.events.publish(order.organizationId, {
+      type: 'order.updated',
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      branchId: order.branchId,
+      status: 'CANCELLED',
+      at: new Date().toISOString(),
     });
     return this.track(slug, orderId, token);
   }

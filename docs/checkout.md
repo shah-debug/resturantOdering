@@ -91,7 +91,7 @@ The cheapest matching zone wins (then lowest minimum, then name). The default "S
 
 ## Not in this phase
 
-Online payment gateways, scheduled orders, saved addresses and customer accounts, order notifications (SMS/WhatsApp/email), and the staff order screen (confirm/prepare/dispatch) are later phases.
+Online payment gateways, scheduled orders, saved addresses and customer accounts, and customer notifications (SMS/WhatsApp) are later phases. Staff order handling is described in [orders.md](orders.md).
 
 ## Tests
 

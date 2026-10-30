@@ -1,6 +1,15 @@
 'use client';
 
-import { LayoutDashboard, ListChecks, Settings, UtensilsCrossed, Users } from 'lucide-react';
+import {
+  Bike,
+  ChefHat,
+  LayoutDashboard,
+  ListChecks,
+  ReceiptText,
+  Settings,
+  UtensilsCrossed,
+  Users,
+} from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Skeleton } from '@app/web/ui';
@@ -11,7 +20,14 @@ import {
   UnavailableState,
 } from '@/components/states';
 import { useGetOrganizationQuery } from '@/features/organizations/organizations-api';
-import { canManageRestaurant, canManageTeam, canReadMenu } from '@/features/organizations/roles';
+import { LiveOrdersBanner, LiveOrdersProvider, LiveStatusIndicator } from '@/features/orders';
+import {
+  canManageRestaurant,
+  canManageTeam,
+  canReadMenu,
+  canReadOrders,
+  canReadRiders,
+} from '@/features/organizations/roles';
 import { useGetOnboardingStatusQuery } from '@/features/restaurant/restaurant-api';
 import { setupProgress } from '@/features/restaurant/steps';
 import type { NavItem } from './main-nav';
@@ -24,6 +40,9 @@ import { type Crumb, TopBar } from './top-bar';
 
 const SECTION_LABELS: Record<string, string> = {
   onboarding: 'Setup',
+  orders: 'Orders',
+  kitchen: 'Kitchen',
+  riders: 'Riders',
   menu: 'Menu',
   members: 'Team',
   settings: 'Settings',
@@ -72,6 +91,15 @@ export function OrganizationShell({
   const items: NavItem[] = [
     { href: base, label: 'Overview', icon: LayoutDashboard, exact: true },
     { href: `${base}/onboarding`, label: 'Setup', icon: ListChecks, badge: setupBadge },
+    ...(canReadOrders(membership?.role)
+      ? [
+          { href: `${base}/orders`, label: 'Orders', icon: ReceiptText },
+          { href: `${base}/kitchen`, label: 'Kitchen', icon: ChefHat },
+        ]
+      : []),
+    ...(canReadRiders(membership?.role)
+      ? [{ href: `${base}/riders`, label: 'Riders', icon: Bike }]
+      : []),
     ...(canReadMenu(membership?.role)
       ? [{ href: `${base}/menu`, label: 'Menu', icon: UtensilsCrossed }]
       : []),
@@ -100,58 +128,69 @@ export function OrganizationShell({
   }
 
   const showNav = Boolean(organization.data);
+  const liveOrders = showNav && canReadOrders(membership?.role);
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[16rem_minmax(0,1fr)]">
-      <a
-        href="#main-content"
-        className="sr-only z-50 rounded-md bg-background px-3 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-2 focus:ring-ring"
-      >
-        Skip to content
-      </a>
-      <aside className="hidden border-r bg-card md:sticky md:top-0 md:flex md:h-dvh md:flex-col">
-        <div className="flex h-14 items-center gap-3 border-b px-4">
-          {organization.isLoading ? (
-            <>
-              <Skeleton className="size-9 rounded-lg" />
-              <Skeleton className="h-4 w-28" />
-            </>
-          ) : (
-            <>
-              <RestaurantMark name={name} logoUrl={logoUrl} />
-              <span className="truncate text-sm font-semibold">{name}</span>
-            </>
-          )}
-        </div>
-        {showNav ? (
-          <div className="flex-1 overflow-y-auto p-3">
-            <MainNav items={items} />
-          </div>
-        ) : null}
-      </aside>
-      <div className="flex min-w-0 flex-col">
-        <TopBar
-          leading={
-            showNav ? <MobileNav items={items} restaurantName={name} logoUrl={logoUrl} /> : null
-          }
-          breadcrumbs={
-            showNav ? organizationBreadcrumbs(pathname, organizationId, name) : [{ label: name }]
-          }
-          actions={
-            <OrganizationSwitcher
-              memberships={me.memberships}
-              currentOrganizationId={organizationId}
-            />
-          }
-        />
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 focus:outline-none sm:px-6 sm:py-8 lg:px-8"
+    <LiveOrdersProvider organizationId={organizationId} enabled={liveOrders}>
+      <div className="min-h-dvh md:grid md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <a
+          href="#main-content"
+          className="sr-only z-50 rounded-md bg-background px-3 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-2 focus:ring-ring"
         >
-          {content}
-        </main>
+          Skip to content
+        </a>
+        <aside className="hidden border-r bg-card print:hidden md:sticky md:top-0 md:flex md:h-dvh md:flex-col">
+          <div className="flex h-14 items-center gap-3 border-b px-4">
+            {organization.isLoading ? (
+              <>
+                <Skeleton className="size-9 rounded-lg" />
+                <Skeleton className="h-4 w-28" />
+              </>
+            ) : (
+              <>
+                <RestaurantMark name={name} logoUrl={logoUrl} />
+                <span className="truncate text-sm font-semibold">{name}</span>
+              </>
+            )}
+          </div>
+          {showNav ? (
+            <div className="flex-1 overflow-y-auto p-3">
+              <MainNav items={items} />
+            </div>
+          ) : null}
+        </aside>
+        <div className="flex min-w-0 flex-col">
+          <TopBar
+            leading={
+              showNav ? <MobileNav items={items} restaurantName={name} logoUrl={logoUrl} /> : null
+            }
+            breadcrumbs={
+              showNav ? organizationBreadcrumbs(pathname, organizationId, name) : [{ label: name }]
+            }
+            actions={
+              <>
+                <LiveStatusIndicator />
+                <OrganizationSwitcher
+                  memberships={me.memberships}
+                  currentOrganizationId={organizationId}
+                />
+              </>
+            }
+          />
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 focus:outline-none sm:px-6 sm:py-8 lg:px-8"
+          >
+            {showNav ? (
+              <div className="mb-6 empty:hidden">
+                <LiveOrdersBanner organizationId={organizationId} />
+              </div>
+            ) : null}
+            {content}
+          </main>
+        </div>
       </div>
-    </div>
+    </LiveOrdersProvider>
   );
 }

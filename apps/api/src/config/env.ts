@@ -58,6 +58,7 @@ export const envSchema = z
     SMTP_USER: z.string().min(1).optional(),
     SMTP_PASSWORD: z.string().min(1).optional(),
     ORDER_TRACKING_SECRET: z.string().min(32).optional(),
+    NOTIFICATION_DISPATCH_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(15),
     STORAGE_DRIVER: z.enum(['local', 'supabase']).default('local'),
     STORAGE_LOCAL_DIR: z.string().min(1).default('uploads'),
     STORAGE_BUCKET: z

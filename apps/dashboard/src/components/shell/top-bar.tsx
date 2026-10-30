@@ -60,7 +60,7 @@ export function TopBar({
   const { signingOut, signOutError } = useSession();
 
   return (
-    <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-30 border-b print:hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="flex h-14 items-center gap-2 px-4 sm:px-6 lg:px-8">
         {leading}
         <div className="min-w-0 flex-1">

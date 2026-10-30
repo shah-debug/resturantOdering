@@ -16,7 +16,9 @@ import { MailModule } from './modules/mail/mail.module.js';
 import { BranchesModule } from './modules/branches/branches.module.js';
 import { MenuModule } from './modules/menu/menu.module.js';
 import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
+import { RidersModule } from './modules/riders/riders.module.js';
 import { StorageModule } from './modules/storage/storage.module.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
 import { STOREFRONT_RATE_LIMIT_KEY } from './modules/storefront/storefront-rate-limit.js';
@@ -66,6 +68,8 @@ import { StorefrontModule } from './modules/storefront/storefront.module.js';
     MenuModule,
     StorefrontModule,
     OrdersModule,
+    RidersModule,
+    NotificationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

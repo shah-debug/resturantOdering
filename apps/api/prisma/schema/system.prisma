@@ -32,6 +32,7 @@ model Notification {
   orderId        String?             @map("order_id") @db.Uuid
   customerId     String?             @map("customer_id") @db.Uuid
   userId         String?             @map("user_id") @db.Uuid
+  dedupeKey      String?             @map("dedupe_key") @db.VarChar(160)
   createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -40,6 +41,7 @@ model Notification {
   customer     Customer?    @relation(fields: [organizationId, customerId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
   user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Restrict)
 
+  @@unique([organizationId, dedupeKey])
   @@index([status, scheduledAt], where: raw("status = 'PENDING'"), map: "notifications_pending_queue_idx")
   @@index([organizationId, createdAt(sort: Desc)])
   @@index([organizationId, orderId])

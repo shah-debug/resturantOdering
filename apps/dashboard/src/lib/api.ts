@@ -13,6 +13,9 @@ export const dashboardApi = baseApi.enhanceEndpoints({
     'Category',
     'Product',
     'AddOnGroup',
+    'Order',
+    'OrderCounts',
+    'Rider',
   ],
 });
 
