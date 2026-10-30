@@ -1,8 +1,10 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { baseApi } from '@app/web/api';
+import { cartSlice } from '@/features/cart/cart-slice';
 
 const rootReducer = combineReducers({
   [baseApi.reducerPath]: baseApi.reducer,
+  [cartSlice.name]: cartSlice.reducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

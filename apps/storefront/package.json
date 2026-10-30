@@ -9,12 +9,14 @@
     "start": "next start --port 3001",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@app/contracts": "workspace:*",
     "@app/web": "workspace:*",
     "@reduxjs/toolkit": "2.13.0",
+    "lucide-react": "1.61.0",
     "next": "16.4.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@app/config-eslint": "workspace:*",
     "@app/config-typescript": "workspace:*",
+    "@playwright/test": "1.64.1",
     "@tailwindcss/postcss": "4.3.3",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",

@@ -14,7 +14,7 @@ Staff browser ─────► dashboard (Next.js) ─────────
 | -------------------- | -------------------------------------------------------------------------------------------- |
 | `apps/api`           | NestJS REST API under `/api/v1`. Owns all business rules, authorization and database access. |
 | `apps/dashboard`     | Restaurant staff and platform admin UI.                                                      |
-| `apps/storefront`    | Customer ordering sites, resolved by host name (subdomain or custom domain).                 |
+| `apps/storefront`    | Customer ordering sites at `/r/<slug>` (see [storefront.md](storefront.md)).                 |
 | `packages/contracts` | Zod schemas and types shared by the API and both web apps.                                   |
 | `packages/web`       | Shared web code: RTK Query base API, error helpers, theme, CSP proxy, test helpers.          |
 | `packages/config-*`  | Shared TypeScript and ESLint configuration.                                                  |
@@ -31,7 +31,7 @@ Staff browser ─────► dashboard (Next.js) ─────────
 Tenant isolation is a security requirement, enforced in layers:
 
 1. **Database (implemented, Phase 1).** Every tenant-owned row carries `organization_id`. References between tenant-owned rows are composite foreign keys on `(organization_id, id)`, so Postgres itself rejects a row that points at another organization's data. See [database-design.md](database-design.md).
-2. **API (implemented for staff).** The organization is resolved server-side: an `OrganizationAccessGuard` loads the caller's membership for the `:organizationId` in the URL on every request (non-members get 404); storefront traffic will resolve it from the request host. It is never taken from client input. Request DTOs reject unknown fields, so a client cannot smuggle in an `organizationId`.
+2. **API (implemented for staff).** The organization is resolved server-side: an `OrganizationAccessGuard` loads the caller's membership for the `:organizationId` in the URL on every request (non-members get 404); public storefront reads resolve it from a published restaurant slug and never return private fields. It is never taken from client input. Request DTOs reject unknown fields, so a client cannot smuggle in an `organizationId`.
 3. **Data access.** Services always filter by the resolved organization; integration tests attempt cross-tenant reads and writes and must fail. Authentication and authorization are described in [auth.md](auth.md).
 
 ## Database access
@@ -65,10 +65,10 @@ Tenant isolation is a security requirement, enforced in layers:
 | 0     | Monorepo, tooling, CI, security headers, CSP, rate limiting                       | Done  |
 | 1     | Supabase + Prisma foundation, schema, migrations, seed, readiness                 | Done  |
 | 2     | Staff authentication (HTTP-only cookie sessions, CSRF), RBAC, organization access | Done  |
-| 3   | Dashboard shell, onboarding, organization and branch settings | Done |
-| 4   | Menu management (see [menu.md](menu.md)) | Done |
-| 5     | Storefront: host resolution, menu, cart                                           |       |
-| 6     | Checkout and order placement                                                      |       |
+| 3     | Dashboard shell, onboarding, organization and branch settings                     | Done  |
+| 4     | Menu management (see [menu.md](menu.md))                                          | Done  |
+| 5     | Storefront: public menu and cart (see [storefront.md](storefront.md))             | Done  |
+| 6     | Guest checkout and order placement (see [checkout.md](checkout.md))               | Done  |
 | 7     | Order operations and live updates                                                 |       |
 | 8     | Riders and delivery                                                               |       |
 | 9     | Online payments and notifications                                                 |       |

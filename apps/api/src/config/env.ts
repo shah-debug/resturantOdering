@@ -34,6 +34,7 @@ export const envSchema = z
     RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
     AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
     AUTH_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(10),
+    STOREFRONT_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(600),
     DATABASE_URL: postgresUrl,
     DATABASE_SSL_CA_PATH: z.string().min(1).optional(),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
@@ -46,9 +47,17 @@ export const envSchema = z
     SESSION_IDLE_TIMEOUT_HOURS: z.coerce.number().int().min(1).max(720).default(24),
     AUTH_LOCKOUT_THRESHOLD: z.coerce.number().int().min(3).max(100).default(10),
     AUTH_LOCKOUT_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
-    MAIL_TRANSPORT: z.enum(['log', 'resend']).default('log'),
+    MAIL_TRANSPORT: z.enum(['log', 'smtp']).default('log'),
     MAIL_FROM: z.string().min(3).default('Restaurant Platform <no-reply@localhost>'),
-    RESEND_API_KEY: z.string().min(1).optional(),
+    SMTP_HOST: z.string().min(1).optional(),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+    SMTP_SECURE: z
+      .enum(['true', 'false'])
+      .transform((value) => value === 'true')
+      .optional(),
+    SMTP_USER: z.string().min(1).optional(),
+    SMTP_PASSWORD: z.string().min(1).optional(),
+    ORDER_TRACKING_SECRET: z.string().min(32).optional(),
     STORAGE_DRIVER: z.enum(['local', 'supabase']).default('local'),
     STORAGE_LOCAL_DIR: z.string().min(1).default('uploads'),
     STORAGE_BUCKET: z
@@ -73,6 +82,13 @@ export const envSchema = z
           code: 'custom',
           path: ['DATABASE_SSL_CA_PATH'],
           message: 'Required in production so database connections use verified TLS',
+        });
+      }
+      if (!env.ORDER_TRACKING_SECRET) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['ORDER_TRACKING_SECRET'],
+          message: 'Required in production so order tracking links stay valid across restarts',
         });
       }
       if (env.MAIL_TRANSPORT === 'log') {
@@ -110,11 +126,18 @@ export const envSchema = z
         message: 'Local file storage is for development only; use supabase in production',
       });
     }
-    if (env.MAIL_TRANSPORT === 'resend' && !env.RESEND_API_KEY) {
+    if (env.MAIL_TRANSPORT === 'smtp' && !env.SMTP_HOST) {
       ctx.addIssue({
         code: 'custom',
-        path: ['RESEND_API_KEY'],
-        message: 'Required when MAIL_TRANSPORT=resend',
+        path: ['SMTP_HOST'],
+        message: 'Required when MAIL_TRANSPORT=smtp',
+      });
+    }
+    if (Boolean(env.SMTP_USER) !== Boolean(env.SMTP_PASSWORD)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMTP_PASSWORD'],
+        message: 'SMTP_USER and SMTP_PASSWORD must be set together',
       });
     }
     if (env.SESSION_IDLE_TIMEOUT_HOURS > env.SESSION_TTL_HOURS) {

@@ -142,6 +142,7 @@ model Order {
   customerNote            String?            @map("customer_note") @db.VarChar(500)
   cancellationReason      String?            @map("cancellation_reason") @db.VarChar(500)
   idempotencyKey          String?            @map("idempotency_key") @db.VarChar(64)
+  idempotencyFingerprint  String?            @map("idempotency_fingerprint") @db.Char(64)
   scheduledFor            DateTime?          @map("scheduled_for") @db.Timestamptz(3)
   placedAt                DateTime           @default(now()) @map("placed_at") @db.Timestamptz(3)
   completedAt             DateTime?          @map("completed_at") @db.Timestamptz(3)

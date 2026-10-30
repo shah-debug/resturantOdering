@@ -26,3 +26,5 @@ apps/api/uploads/
 apps/api/.e2e-uploads/
 apps/dashboard/test-results/
 apps/dashboard/playwright-report/
+apps/storefront/test-results/
+apps/storefront/playwright-report/

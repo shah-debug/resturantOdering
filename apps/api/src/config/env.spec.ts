@@ -83,11 +83,12 @@ describe('parseEnv', () => {
       DATABASE_URL,
       DATABASE_SSL_CA_PATH: '/etc/ssl/supabase-ca.crt',
       APP_ORIGINS: 'https://app.example.com',
-      MAIL_TRANSPORT: 'resend',
-      RESEND_API_KEY: 're_test_key',
+      MAIL_TRANSPORT: 'smtp',
+      SMTP_HOST: 'smtp.example.com',
       STORAGE_DRIVER: 'supabase',
       SUPABASE_URL: 'https://abc.supabase.co',
       SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value-123',
+      ORDER_TRACKING_SECRET: 'test-order-tracking-secret-0123456789abcdef',
     };
 
     it('accepts a complete production configuration', () => {
@@ -102,6 +103,15 @@ describe('parseEnv', () => {
 
     it('rejects local file storage', () => {
       expect(() => parseEnv({ ...production, STORAGE_DRIVER: 'local' })).toThrow(/STORAGE_DRIVER/);
+    });
+
+    it('requires an order tracking secret', () => {
+      expect(() => parseEnv({ ...production, ORDER_TRACKING_SECRET: undefined })).toThrow(
+        /ORDER_TRACKING_SECRET/,
+      );
+      expect(() => parseEnv({ ...production, ORDER_TRACKING_SECRET: 'too-short' })).toThrow(
+        /ORDER_TRACKING_SECRET/,
+      );
     });
 
     it('rejects the log mail transport', () => {
@@ -130,8 +140,25 @@ describe('parseEnv', () => {
     );
   });
 
-  it('requires a Resend API key for the resend transport', () => {
-    expect(() => parseEnv({ DATABASE_URL, MAIL_TRANSPORT: 'resend' })).toThrow(/RESEND_API_KEY/);
+  it('requires an SMTP host for the smtp transport', () => {
+    expect(() => parseEnv({ DATABASE_URL, MAIL_TRANSPORT: 'smtp' })).toThrow(/SMTP_HOST/);
+  });
+
+  it('requires SMTP credentials as a pair', () => {
+    expect(() =>
+      parseEnv({
+        DATABASE_URL,
+        MAIL_TRANSPORT: 'smtp',
+        SMTP_HOST: 'smtp.example.com',
+        SMTP_USER: 'mailer',
+      }),
+    ).toThrow(/SMTP_PASSWORD/);
+  });
+
+  it('parses SMTP_SECURE as a boolean', () => {
+    expect(parseEnv({ DATABASE_URL, SMTP_SECURE: 'false' }).SMTP_SECURE).toBe(false);
+    expect(parseEnv({ DATABASE_URL, SMTP_SECURE: 'true' }).SMTP_SECURE).toBe(true);
+    expect(() => parseEnv({ DATABASE_URL, SMTP_SECURE: 'yes' })).toThrow(/SMTP_SECURE/);
   });
 
   it('rejects an idle timeout longer than the session lifetime', () => {

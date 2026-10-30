@@ -1,31 +1,70 @@
 import { vi } from 'vitest';
-import { MailDeliveryError, ResendMailer } from './mailer';
+import { AppConfig } from '../../config/app-config';
+import { parseEnv } from '../../config/env';
+import { MailDeliveryError, SmtpMailer, type MailTransport } from './mailer';
 
-describe('ResendMailer', () => {
+const DATABASE_URL = 'postgresql://user:pass@localhost:5432/app';
+
+describe('SmtpMailer', () => {
   const message = { to: 'owner@example.com', subject: 'Verify', text: 'Link' };
 
-  it('posts the message to the Resend API with the API key', async () => {
-    const fetchFn = vi.fn<typeof fetch>(() => Promise.resolve(new Response('{}', { status: 200 })));
-    await new ResendMailer('re_key', 'Platform <no-reply@example.com>', fetchFn).send(message);
+  it('sends the message through the SMTP transport with the configured sender', async () => {
+    const sendMail = vi.fn<MailTransport['sendMail']>(() => Promise.resolve({}));
+    await new SmtpMailer({ sendMail }, 'Platform <no-reply@example.com>').send(message);
 
-    const [url, init] = fetchFn.mock.calls[0] ?? [];
-    expect(url).toBe('https://api.resend.com/emails');
-    expect(init?.method).toBe('POST');
-    expect(new Headers(init?.headers).get('authorization')).toBe('Bearer re_key');
-    expect(typeof init?.body === 'string' ? JSON.parse(init.body) : null).toEqual({
+    expect(sendMail).toHaveBeenCalledWith({
       from: 'Platform <no-reply@example.com>',
-      to: ['owner@example.com'],
+      to: 'owner@example.com',
       subject: 'Verify',
       text: 'Link',
     });
   });
 
-  it('throws without leaking the response body when delivery fails', async () => {
-    const fetchFn = vi.fn<typeof fetch>(() =>
-      Promise.resolve(new Response('{"message":"invalid key re_key"}', { status: 401 })),
-    );
-    const sending = new ResendMailer('re_key', 'a@example.com', fetchFn).send(message);
+  it('throws without leaking the server response when delivery fails', async () => {
+    const failure = Object.assign(new Error('535 Authentication failed for secret-user'), {
+      code: 'EAUTH',
+    });
+    const sending = new SmtpMailer(
+      { sendMail: () => Promise.reject(failure) },
+      'a@example.com',
+    ).send(message);
     await expect(sending).rejects.toBeInstanceOf(MailDeliveryError);
-    await expect(sending).rejects.not.toThrow(/re_key/);
+    await expect(sending).rejects.toThrow('SMTP delivery failed (EAUTH)');
+    await expect(sending).rejects.not.toThrow(/secret-user/);
+  });
+});
+
+describe('mail config', () => {
+  it('uses implicit TLS on port 465 unless overridden', () => {
+    const config = (env: Record<string, string>) =>
+      new AppConfig(
+        parseEnv({ DATABASE_URL, MAIL_TRANSPORT: 'smtp', SMTP_HOST: 'smtp.example.com', ...env }),
+      ).mail.smtp;
+
+    expect(config({ SMTP_PORT: '465' })).toMatchObject({ port: 465, secure: true });
+    expect(config({})).toMatchObject({ port: 587, secure: false, requireTls: false });
+    expect(config({ SMTP_PORT: '465', SMTP_SECURE: 'false' })).toMatchObject({ secure: false });
+  });
+
+  it('requires STARTTLS in production', () => {
+    const config = new AppConfig(
+      parseEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL,
+        DATABASE_SSL_CA_PATH: '/ca.crt',
+        APP_ORIGINS: 'https://app.example.com',
+        MAIL_TRANSPORT: 'smtp',
+        SMTP_HOST: 'smtp.example.com',
+        STORAGE_DRIVER: 'supabase',
+        SUPABASE_URL: 'https://abc.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value-123',
+        ORDER_TRACKING_SECRET: 'test-order-tracking-secret-0123456789abcdef',
+      }),
+    );
+    expect(config.mail.smtp?.requireTls).toBe(true);
+  });
+
+  it('has no SMTP settings for the log transport', () => {
+    expect(new AppConfig(parseEnv({ DATABASE_URL })).mail.smtp).toBeUndefined();
   });
 });

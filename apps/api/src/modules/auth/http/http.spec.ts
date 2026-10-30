@@ -46,11 +46,12 @@ describe('session cookie configuration', () => {
         DATABASE_URL,
         DATABASE_SSL_CA_PATH: '/ca.crt',
         APP_ORIGINS: 'https://app.example.com',
-        MAIL_TRANSPORT: 'resend',
-        RESEND_API_KEY: 're_key',
+        MAIL_TRANSPORT: 'smtp',
+        SMTP_HOST: 'smtp.example.com',
         STORAGE_DRIVER: 'supabase',
         SUPABASE_URL: 'https://abc.supabase.co',
         SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value-123',
+        ORDER_TRACKING_SECRET: 'test-order-tracking-secret-0123456789abcdef',
       }),
     );
     const options = sessionCookieOptions(config.auth, 1000);

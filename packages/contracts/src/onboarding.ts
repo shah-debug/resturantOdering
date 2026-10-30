@@ -41,7 +41,7 @@ export const openingIntervalSchema = z
   });
 export type OpeningInterval = z.infer<typeof openingIntervalSchema>;
 
-function weekSpan(interval: OpeningInterval): { start: number; end: number } {
+export function openingIntervalWeekSpan(interval: OpeningInterval): { start: number; end: number } {
   const opens = timeToMinutes(interval.opensAt);
   const closes = timeToMinutes(interval.closesAt);
   const start = (interval.dayOfWeek - 1) * MINUTES_PER_DAY + opens;
@@ -52,7 +52,7 @@ function weekSpan(interval: OpeningInterval): { start: number; end: number } {
 export function findOpeningHoursOverlap(
   intervals: readonly OpeningInterval[],
 ): [number, number] | null {
-  const spans = intervals.map(weekSpan);
+  const spans = intervals.map(openingIntervalWeekSpan);
   for (let i = 0; i < spans.length; i += 1) {
     for (let j = i + 1; j < spans.length; j += 1) {
       const a = spans[i];

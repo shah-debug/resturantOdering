@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { AppConfig } from '../../config/app-config.js';
-import { LogMailer, Mailer, ResendMailer } from './mailer.js';
+import { createSmtpTransport, LogMailer, Mailer, SmtpMailer } from './mailer.js';
 
 @Global()
 @Module({
@@ -9,9 +9,9 @@ import { LogMailer, Mailer, ResendMailer } from './mailer.js';
       provide: Mailer,
       inject: [AppConfig],
       useFactory: (config: AppConfig): Mailer => {
-        const { transport, from, resendApiKey } = config.mail;
-        if (transport === 'resend' && resendApiKey) {
-          return new ResendMailer(resendApiKey, from);
+        const { from, smtp } = config.mail;
+        if (smtp) {
+          return new SmtpMailer(createSmtpTransport(smtp), from);
         }
         return new LogMailer();
       },

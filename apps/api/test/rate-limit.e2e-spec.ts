@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { Public } from '../src/modules/auth/http/decorators';
+import { StorefrontRateLimit } from '../src/modules/storefront/storefront-rate-limit';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { apiErrorResponseSchema } from '@app/contracts';
 import request from 'supertest';
@@ -14,7 +15,18 @@ class RateLimitProbeController {
   }
 }
 
+@Public()
+@Controller('storefront-probe')
+class StorefrontProbeController {
+  @Get()
+  @StorefrontRateLimit()
+  probe(): { ok: true } {
+    return { ok: true };
+  }
+}
+
 const LIMIT = 3;
+const STOREFRONT_LIMIT = 6;
 const PROBE = '/api/v1/rate-limit-probe';
 
 function fromClient(app: NestExpressApplication, ip: string) {
@@ -26,8 +38,12 @@ describe('Rate limiting (e2e)', () => {
 
   beforeAll(async () => {
     app = await createTestApp({
-      env: { RATE_LIMIT_MAX_REQUESTS: String(LIMIT), TRUST_PROXY_HOPS: '1' },
-      controllers: [RateLimitProbeController],
+      env: {
+        RATE_LIMIT_MAX_REQUESTS: String(LIMIT),
+        STOREFRONT_RATE_LIMIT_MAX_REQUESTS: String(STOREFRONT_LIMIT),
+        TRUST_PROXY_HOPS: '1',
+      },
+      controllers: [RateLimitProbeController, StorefrontProbeController],
     });
   });
 
@@ -58,5 +74,17 @@ describe('Rate limiting (e2e)', () => {
         .set('X-Forwarded-For', '203.0.113.30')
         .expect(200);
     }
+  });
+
+  it('gives public storefront reads their own, larger budget', async () => {
+    const storefront = () =>
+      request(app.getHttpServer())
+        .get('/api/v1/storefront-probe')
+        .set('X-Forwarded-For', '203.0.113.40');
+    for (let attempt = 0; attempt < STOREFRONT_LIMIT; attempt += 1) {
+      await storefront().expect(200);
+    }
+    await storefront().expect(429);
+    await fromClient(app, '203.0.113.40').expect(200);
   });
 });

@@ -2,7 +2,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 import { withContentSecurityPolicy } from '@app/web/proxy';
 
 export function proxy(request: NextRequest): NextResponse {
-  return withContentSecurityPolicy(request);
+  return withContentSecurityPolicy(request, { imgSources: ['https:'] });
 }
 
 export const config = {

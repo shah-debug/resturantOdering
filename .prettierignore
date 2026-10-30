@@ -6,3 +6,7 @@ pnpm-lock.yaml
 next-env.d.ts
 apps/api/src/generated
 apps/api/prisma/migrations/**/*.sql
+apps/api/.agents
+apps/api/.claude
+apps/api/.windsurf
+apps/api/skills-lock.json

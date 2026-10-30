@@ -124,9 +124,12 @@ Recorded in `audit_logs` (append-only) with actor, organization, entity, client 
 | `AUTH_LOCKOUT_MINUTES`           | `15`                                          | Lockout duration                                                               |
 | `AUTH_RATE_LIMIT_WINDOW_SECONDS` | `60`                                          | Sensitive endpoint window                                                      |
 | `AUTH_RATE_LIMIT_MAX_REQUESTS`   | `10`                                          | Per IP, per endpoint, per window                                               |
-| `MAIL_TRANSPORT`                 | `log`                                         | `log` (development only; prints links) or `resend`                             |
-| `MAIL_FROM`                      | `Restaurant Platform <no-reply@localhost>`    | Must be on a verified sending domain in production                             |
-| `RESEND_API_KEY`                 | —                                             | Required when `MAIL_TRANSPORT=resend`                                          |
+| `MAIL_TRANSPORT`                 | `log`                                         | `log` (development only; prints links) or `smtp` (nodemailer)                  |
+| `MAIL_FROM`                      | `Restaurant Platform <no-reply@localhost>`    | An address the SMTP account may send from                                      |
+| `SMTP_HOST`                      | —                                             | Required when `MAIL_TRANSPORT=smtp`                                            |
+| `SMTP_PORT`                      | `587`                                         | 587 for STARTTLS, 465 for implicit TLS                                         |
+| `SMTP_SECURE`                    | `true` on port 465, otherwise `false`         | Implicit TLS; STARTTLS is required in production when this is `false`          |
+| `SMTP_USER` / `SMTP_PASSWORD`    | —                                             | Set both or neither                                                            |
 | `TRUST_PROXY_HOPS`               | `1`                                           | Proxies in front of the API; used for client IPs in rate limits and audit logs |
 
 The API refuses to start in production with the `log` mail transport, non-https origins, or no database CA certificate.
@@ -141,11 +144,15 @@ The app does not use Supabase Auth. In the Supabase dashboard:
 2. **Connect:** copy the **session pooler** URL (port 5432) into `DATABASE_URL` without `sslmode`, and the direct or session-pooler URL into `DIRECT_URL` with `?sslmode=verify-full&sslrootcert=<path to the CA file>`.
 3. Leave Supabase Auth unused. The Data API cannot read or write application tables: RLS is on with no policies and API roles have no grants.
 
-### Email (Resend)
+### Email (SMTP)
 
-1. Create a Resend account and add your sending domain.
-2. Publish the SPF, DKIM (and recommended DMARC) DNS records Resend shows, and wait until the domain is verified.
-3. Create an API key with sending permission only, and set `MAIL_TRANSPORT=resend`, `RESEND_API_KEY`, and `MAIL_FROM` on the verified domain.
+Emails are sent with nodemailer through any SMTP server (your own mail server, Gmail/Google Workspace, Zoho, or your host's mailbox).
+
+1. Get the SMTP host, port and credentials from your mail provider. For Gmail, turn on 2-Step Verification and create an **App Password**; do not use the account password.
+2. Set `MAIL_TRANSPORT=smtp`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `MAIL_FROM` to an address that account may send from.
+3. For a custom domain, publish SPF, DKIM and DMARC records for it so messages are not marked as spam.
+
+Delivery failures are logged with the SMTP error code only; requests such as signup still succeed so they do not reveal whether an email exists.
 
 ### Platform administrators
 

@@ -1,3 +1,5 @@
+import type { SmtpSettings } from '../modules/mail/mailer.js';
+import { randomBytes } from 'node:crypto';
 import type { Env } from './env.js';
 
 export interface RateLimitConfig {
@@ -5,6 +7,7 @@ export interface RateLimitConfig {
   maxRequests: number;
   sensitiveWindowMs: number;
   sensitiveMaxRequests: number;
+  storefrontMaxRequests: number;
 }
 
 export interface DatabaseConfig {
@@ -36,13 +39,19 @@ export interface StorageConfig {
 export interface MailConfig {
   transport: Env['MAIL_TRANSPORT'];
   from: string;
-  resendApiKey: string | undefined;
+  smtp: SmtpSettings | undefined;
 }
 
 const HOUR_MS = 60 * 60 * 1000;
 
 export class AppConfig {
+  private readonly fallbackTrackingSecret = randomBytes(32).toString('base64url');
+
   constructor(private readonly env: Env) {}
+
+  get orderTrackingSecret(): string {
+    return this.env.ORDER_TRACKING_SECRET ?? this.fallbackTrackingSecret;
+  }
 
   get nodeEnv(): Env['NODE_ENV'] {
     return this.env.NODE_ENV;
@@ -66,6 +75,7 @@ export class AppConfig {
       maxRequests: this.env.RATE_LIMIT_MAX_REQUESTS,
       sensitiveWindowMs: this.env.AUTH_RATE_LIMIT_WINDOW_SECONDS * 1000,
       sensitiveMaxRequests: this.env.AUTH_RATE_LIMIT_MAX_REQUESTS,
+      storefrontMaxRequests: this.env.STOREFRONT_RATE_LIMIT_MAX_REQUESTS,
     };
   }
 
@@ -113,7 +123,17 @@ export class AppConfig {
     return {
       transport: this.env.MAIL_TRANSPORT,
       from: this.env.MAIL_FROM,
-      resendApiKey: this.env.RESEND_API_KEY,
+      smtp:
+        this.env.MAIL_TRANSPORT === 'smtp' && this.env.SMTP_HOST
+          ? {
+              host: this.env.SMTP_HOST,
+              port: this.env.SMTP_PORT,
+              secure: this.env.SMTP_SECURE ?? this.env.SMTP_PORT === 465,
+              requireTls: this.isProduction,
+              user: this.env.SMTP_USER,
+              password: this.env.SMTP_PASSWORD,
+            }
+          : undefined,
     };
   }
 }

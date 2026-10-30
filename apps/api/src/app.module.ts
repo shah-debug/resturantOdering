@@ -16,8 +16,11 @@ import { MailModule } from './modules/mail/mail.module.js';
 import { BranchesModule } from './modules/branches/branches.module.js';
 import { MenuModule } from './modules/menu/menu.module.js';
 import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
+import { OrdersModule } from './modules/orders/orders.module.js';
 import { StorageModule } from './modules/storage/storage.module.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
+import { STOREFRONT_RATE_LIMIT_KEY } from './modules/storefront/storefront-rate-limit.js';
+import { StorefrontModule } from './modules/storefront/storefront.module.js';
 
 @Module({
   imports: [
@@ -28,7 +31,20 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
       useFactory: (config: AppConfig) => ({
         errorMessage: 'Too many requests. Please try again shortly.',
         throttlers: [
-          { name: 'default', ttl: config.rateLimit.windowMs, limit: config.rateLimit.maxRequests },
+          {
+            name: 'default',
+            ttl: config.rateLimit.windowMs,
+            limit: config.rateLimit.maxRequests,
+            skipIf: (context) =>
+              Reflect.getMetadata(STOREFRONT_RATE_LIMIT_KEY, context.getHandler()) === true,
+          },
+          {
+            name: 'storefront',
+            ttl: config.rateLimit.windowMs,
+            limit: config.rateLimit.storefrontMaxRequests,
+            skipIf: (context) =>
+              Reflect.getMetadata(STOREFRONT_RATE_LIMIT_KEY, context.getHandler()) !== true,
+          },
           {
             name: 'sensitive',
             ttl: config.rateLimit.sensitiveWindowMs,
@@ -48,6 +64,8 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
     OnboardingModule,
     StorageModule,
     MenuModule,
+    StorefrontModule,
+    OrdersModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

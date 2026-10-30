@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { createTransport } from 'nodemailer';
 
 export interface MailMessage {
   to: string;
@@ -21,32 +22,57 @@ export class LogMailer extends Mailer {
 
 export class MailDeliveryError extends Error {}
 
-export class ResendMailer extends Mailer {
+export interface SmtpSettings {
+  host: string;
+  port: number;
+  secure: boolean;
+  requireTls: boolean;
+  user: string | undefined;
+  password: string | undefined;
+}
+
+export interface MailTransport {
+  sendMail(mail: { from: string; to: string; subject: string; text: string }): Promise<unknown>;
+}
+
+export function createSmtpTransport(settings: SmtpSettings): MailTransport {
+  return createTransport({
+    host: settings.host,
+    port: settings.port,
+    secure: settings.secure,
+    requireTLS: settings.requireTls,
+    auth:
+      settings.user && settings.password
+        ? { user: settings.user, pass: settings.password }
+        : undefined,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
+  });
+}
+
+export class SmtpMailer extends Mailer {
   constructor(
-    private readonly apiKey: string,
+    private readonly transport: MailTransport,
     private readonly from: string,
-    private readonly fetchFn: typeof fetch = fetch,
   ) {
     super();
   }
 
   async send(message: MailMessage): Promise<void> {
-    const response = await this.fetchFn('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    try {
+      await this.transport.sendMail({
         from: this.from,
-        to: [message.to],
+        to: message.to,
         subject: message.subject,
         text: message.text,
-      }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) {
-      throw new MailDeliveryError(`Email provider responded with HTTP ${response.status}`);
+      });
+    } catch (error) {
+      const code =
+        error instanceof Error && 'code' in error && typeof error.code === 'string'
+          ? error.code
+          : 'UNKNOWN';
+      throw new MailDeliveryError(`SMTP delivery failed (${code})`);
     }
   }
 }
