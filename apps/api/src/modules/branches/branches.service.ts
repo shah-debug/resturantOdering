@@ -26,6 +26,7 @@ export function branchNotFound(): AppException {
 export interface BranchActor {
   auth: AuthContext;
   organizationId: string;
+  scopeBranchId: string | null;
   meta: RequestMeta;
 }
 
@@ -58,6 +59,13 @@ export class BranchesService {
   }
 
   async create(actor: BranchActor, dto: CreateBranchDto): Promise<Branch> {
+    if (actor.scopeBranchId) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        'FORBIDDEN',
+        'Only organization-wide managers can add branches',
+      );
+    }
     await this.entitlements.assertCanAdd(actor.organizationId, 'branches');
     const base = slugifyBranchName(dto.name);
     const taken = new Set(
@@ -103,7 +111,7 @@ export class BranchesService {
         { field: 'body', message: 'Provide at least one field to update' },
       ]);
     }
-    await this.assertBranch(actor.organizationId, branchId);
+    await this.assertBranch(actor, branchId);
     return this.prisma.$transaction(async (tx) => {
       const row = await tx.branch.update({
         where: { id: branchId },
@@ -137,7 +145,7 @@ export class BranchesService {
         { field: `intervals.${overlap[1]}`, message: 'This time overlaps another opening period' },
       ]);
     }
-    await this.assertBranch(actor.organizationId, branchId);
+    await this.assertBranch(actor, branchId);
 
     return this.prisma.$transaction(async (tx) => {
       await tx.branchOpeningHours.deleteMany({
@@ -183,7 +191,7 @@ export class BranchesService {
     if (errors.length > 0) {
       throw new ValidationFailedException(errors);
     }
-    await this.assertBranch(actor.organizationId, branchId);
+    await this.assertBranch(actor, branchId);
 
     return this.prisma.$transaction(async (tx) => {
       await tx.branch.update({
@@ -234,9 +242,12 @@ export class BranchesService {
     });
   }
 
-  private async assertBranch(organizationId: string, branchId: string): Promise<void> {
+  private async assertBranch(actor: BranchActor, branchId: string): Promise<void> {
+    if (actor.scopeBranchId && actor.scopeBranchId !== branchId) {
+      throw branchNotFound();
+    }
     const branch = await this.prisma.branch.findFirst({
-      where: { id: branchId, organizationId },
+      where: { id: branchId, organizationId: actor.organizationId },
       select: { id: true },
     });
     if (!branch) {

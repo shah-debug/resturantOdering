@@ -187,6 +187,85 @@ describe('organization access and tenant isolation (in-memory Postgres)', () => 
       }
     });
 
+    it('keeps a branch manager inside their own branch', async () => {
+      const [north, south] = await Promise.all(
+        ['north', 'south'].map((name) =>
+          harness.prisma.branch.create({
+            data: {
+              organizationId: orgA,
+              name,
+              slug: `${name}-${randomUUID().slice(0, 6)}`,
+              addressLine: '1 Road',
+              city: 'Lahore',
+            },
+          }),
+        ),
+      );
+      const scoped = await addMember(harness, ownerA, orgA, 'MANAGER', 'a-branch-manager');
+      await ownerA
+        .patch(`/organizations/${orgA}/members/${scoped.membershipId}`, { branchId: north?.id })
+        .expect(200);
+      const southStaff = await addMember(harness, ownerA, orgA, 'ORDER_STAFF', 'a-south');
+      await ownerA
+        .patch(`/organizations/${orgA}/members/${southStaff.membershipId}`, { branchId: south?.id })
+        .expect(200);
+      const northStaff = await addMember(harness, ownerA, orgA, 'KITCHEN_STAFF', 'a-north');
+      await ownerA
+        .patch(`/organizations/${orgA}/members/${northStaff.membershipId}`, { branchId: north?.id })
+        .expect(200);
+      const invite = (branchId: string | undefined) =>
+        scoped.client.post(`/organizations/${orgA}/members`, {
+          email: `scoped-${randomUUID().slice(0, 6)}@example.com`,
+          fullName: 'Branch Hire',
+          role: 'ORDER_STAFF',
+          ...(branchId ? { branchId } : {}),
+        });
+
+      await invite(undefined).expect(403);
+      await invite(south?.id).expect(403);
+      await invite(north?.id).expect(201);
+      await scoped.client
+        .patch(`/organizations/${orgA}/members/${southStaff.membershipId}`, { status: 'SUSPENDED' })
+        .expect(404);
+      await scoped.client
+        .delete(`/organizations/${orgA}/members/${southStaff.membershipId}`)
+        .expect(404);
+      await scoped.client
+        .patch(`/organizations/${orgA}/members/${northStaff.membershipId}`, { branchId: south?.id })
+        .expect(403);
+      await scoped.client
+        .patch(`/organizations/${orgA}/members/${northStaff.membershipId}`, { status: 'SUSPENDED' })
+        .expect(200);
+      const listed = (await scoped.client.get(`/organizations/${orgA}/members`).expect(200))
+        .body as { items: { membershipId: string }[] };
+      const ids = listed.items.map((item) => item.membershipId);
+      expect(ids).toContain(northStaff.membershipId);
+      expect(ids).not.toContain(southStaff.membershipId);
+      const southAfter = await harness.prisma.membership.findUniqueOrThrow({
+        where: { id: southStaff.membershipId },
+      });
+      expect(southAfter.status).toBe('ACTIVE');
+
+      const branches = `/organizations/${orgA}/branches`;
+      await scoped.client
+        .post(branches, {
+          name: 'Rogue',
+          phone: '+924235000000',
+          addressLine: '12 Main Boulevard',
+          city: 'Lahore',
+        })
+        .expect(403);
+      await scoped.client.patch(`${branches}/${south?.id}`, { name: 'Taken over' }).expect(404);
+      await scoped.client
+        .put(`${branches}/${south?.id}/opening-hours`, { intervals: [] })
+        .expect(404);
+      await scoped.client.patch(`${branches}/${north?.id}`, { name: 'North Renamed' }).expect(200);
+      const southBranch = await harness.prisma.branch.findUniqueOrThrow({
+        where: { id: south?.id },
+      });
+      expect(southBranch.name).toBe('south');
+    });
+
     it('does not let managers change or remove owners', async () => {
       const owners = await harness.prisma.membership.findMany({
         where: { organizationId: orgA, role: 'OWNER' },

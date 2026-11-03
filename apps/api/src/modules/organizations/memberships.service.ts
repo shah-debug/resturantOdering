@@ -32,6 +32,20 @@ function cannotManage(): AppException {
   );
 }
 
+function outsideBranch(): AppException {
+  return new AppException(
+    HttpStatus.FORBIDDEN,
+    'FORBIDDEN',
+    'You can only manage members of your own branch',
+  );
+}
+
+function assertWithinBranch(access: OrganizationAccess, branchId: string | null): void {
+  if (access.branchId && branchId !== access.branchId) {
+    throw outsideBranch();
+  }
+}
+
 function lastOwner(): AppException {
   return new AppException(
     HttpStatus.CONFLICT,
@@ -53,8 +67,15 @@ export class MembershipsService {
     private readonly entitlements: EntitlementsService,
   ) {}
 
-  async list(organizationId: string, page: number, pageSize: number): Promise<Paginated<Member>> {
-    const where = { organizationId };
+  async list(
+    access: OrganizationAccess,
+    page: number,
+    pageSize: number,
+  ): Promise<Paginated<Member>> {
+    const where = {
+      organizationId: access.organizationId,
+      ...(access.branchId ? { branchId: access.branchId } : {}),
+    };
     const [total, rows] = await this.prisma.$transaction([
       this.prisma.membership.count({ where }),
       this.prisma.membership.findMany({
@@ -77,8 +98,9 @@ export class MembershipsService {
     if (!canManageRole(access.role, access.platformRole, dto.role)) {
       throw cannotManage();
     }
-    await this.entitlements.assertCanAdd(access.organizationId, 'members');
     const branchId = dto.branchId ?? null;
+    assertWithinBranch(access, branchId);
+    await this.entitlements.assertCanAdd(access.organizationId, 'members');
     await this.assertBranchInOrganization(access.organizationId, branchId);
 
     const existingUser = await this.prisma.user.findUnique({
@@ -178,6 +200,7 @@ export class MembershipsService {
       ]);
     }
     if (dto.branchId !== undefined) {
+      assertWithinBranch(access, dto.branchId);
       await this.assertBranchInOrganization(access.organizationId, dto.branchId);
     }
 
@@ -268,7 +291,7 @@ export class MembershipsService {
       where: { id: membershipId, organizationId: access.organizationId },
       select: { id: true, userId: true, role: true, status: true, branchId: true },
     });
-    if (!target) {
+    if (!target || (access.branchId && target.branchId !== access.branchId)) {
       throw memberNotFound();
     }
     if (target.userId === auth.user.id) {

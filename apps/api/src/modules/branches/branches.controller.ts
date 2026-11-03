@@ -18,7 +18,12 @@ import {
 } from './dto/branch.dto.js';
 
 function actorOf(auth: AuthContext, access: OrganizationAccess, request: Request): BranchActor {
-  return { auth, organizationId: access.organizationId, meta: requestMeta(request) };
+  return {
+    auth,
+    organizationId: access.organizationId,
+    scopeBranchId: access.branchId,
+    meta: requestMeta(request),
+  };
 }
 
 @Controller('organizations/:organizationId/branches')

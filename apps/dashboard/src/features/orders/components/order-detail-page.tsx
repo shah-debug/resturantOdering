@@ -263,13 +263,17 @@ export function OrderDetailPage({
               Customer
             </h2>
             <p>{order.customerName}</p>
-            <a
-              href={`tel:${order.customerPhone}`}
-              className="inline-flex items-center gap-2 font-medium underline underline-offset-4"
-            >
-              <Phone className="size-4" aria-hidden="true" />
-              {order.customerPhone}
-            </a>
+            {/^\+\d+$/.test(order.customerPhone) ? (
+              <a
+                href={`tel:${order.customerPhone}`}
+                className="inline-flex items-center gap-2 font-medium underline underline-offset-4"
+              >
+                <Phone className="size-4" aria-hidden="true" />
+                {order.customerPhone}
+              </a>
+            ) : (
+              <p className="tabular-nums text-muted-foreground">{order.customerPhone}</p>
+            )}
             {order.delivery ? (
               <address className="text-muted-foreground not-italic">
                 {order.delivery.addressLine}

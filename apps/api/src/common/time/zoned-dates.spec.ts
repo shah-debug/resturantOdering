@@ -36,4 +36,13 @@ describe('zoned dates', () => {
     expect(localDateOf(lateEvening, 'Asia/Karachi')).toBe('2026-10-31');
     expect(localDateOf(lateEvening, 'UTC')).toBe('2026-10-30');
   });
+
+  it('stays fast enough for a 20,000-row export without blocking the event loop', () => {
+    const start = Date.UTC(2026, 0, 1);
+    const started = performance.now();
+    for (let index = 0; index < 20_000; index += 1) {
+      localDateOf(new Date(start + index * 600_000), index % 2 ? 'Asia/Karachi' : 'UTC');
+    }
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
 });

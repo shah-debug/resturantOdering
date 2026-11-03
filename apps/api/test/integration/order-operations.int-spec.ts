@@ -335,8 +335,19 @@ describe('order operations (in-memory Postgres)', () => {
 
     it('shows order detail with customizations and delivery details', async () => {
       const placed = await placeOrder();
-      const detail = orderDetailSchema.parse(
+      const kitchenDetail = orderDetailSchema.parse(
         (await kitchen.get(`${orders}/${placed.orderId}`).expect(200)).body,
+      );
+      expect(kitchenDetail.customerPhone).not.toContain('9876543');
+      expect(kitchenDetail.customerPhone).toMatch(/543$/);
+      expect(kitchenDetail.delivery).toBeNull();
+      expect(kitchenDetail.availableTransitions).toEqual([]);
+      const kitchenList = (await kitchen.get(`${orders}?view=new`).expect(200)).body as {
+        items: { customerPhone: string }[];
+      };
+      expect(JSON.stringify(kitchenList)).not.toContain('+923009876543');
+      const detail = orderDetailSchema.parse(
+        (await orderStaff.get(`${orders}/${placed.orderId}`).expect(200)).body,
       );
       expect(detail).toMatchObject({
         customerPhone: '+923009876543',
@@ -352,7 +363,6 @@ describe('order operations (in-memory Postgres)', () => {
           }),
         ],
         timeline: [expect.objectContaining({ toStatus: 'PENDING', actorType: 'CUSTOMER' })],
-        availableTransitions: [],
         canAssignRider: false,
       });
     });

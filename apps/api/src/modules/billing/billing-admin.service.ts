@@ -215,7 +215,9 @@ export class BillingAdminService {
         `billing.payment_verified:${payment.id}`,
         emailPayload,
       );
-      if (invoice.status !== 'OPEN') {
+      const [locked] = await tx.$queryRaw<{ status: string }[]>`
+        SELECT status FROM subscription_invoices WHERE id = ${invoice.id}::uuid FOR UPDATE`;
+      if (locked?.status !== 'OPEN') {
         return;
       }
       const verified = await tx.subscriptionPayment.aggregate({

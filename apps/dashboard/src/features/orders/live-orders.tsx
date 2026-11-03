@@ -14,6 +14,7 @@ import {
 import { useAppDispatch } from '@/store/hooks';
 import { ordersApi } from './orders-api';
 import { OrderStream, type StreamStatus } from './order-stream';
+import { InvalidationBatcher } from './invalidation-batcher';
 
 export const FALLBACK_POLL_MS = 60_000;
 const MAX_INCOMING = 5;
@@ -96,17 +97,23 @@ export function LiveOrdersProvider({
     if (!enabled || typeof EventSource === 'undefined') {
       return;
     }
+    const batcher = new InvalidationBatcher((orderIds) => {
+      dispatch(
+        ordersApi.util.invalidateTags([
+          { type: 'Order', id: 'LIST' },
+          ...orderIds.map((id) => ({ type: 'Order' as const, id })),
+          'OrderCounts',
+        ]),
+      );
+    });
     const stream = new OrderStream(eventsUrl(organizationId), {
       onStatus: setStatus,
-      onReady: refresh,
+      onReady: () => {
+        batcher.cancel();
+        refresh();
+      },
       onEvent: (event) => {
-        dispatch(
-          ordersApi.util.invalidateTags([
-            { type: 'Order', id: 'LIST' },
-            { type: 'Order', id: event.orderId },
-            'OrderCounts',
-          ]),
-        );
+        batcher.add(event.orderId);
         if (event.type === 'order.created') {
           setIncoming((current) =>
             [event, ...current.filter((entry) => entry.orderId !== event.orderId)].slice(
@@ -131,6 +138,7 @@ export function LiveOrdersProvider({
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
       stream.stop();
+      batcher.cancel();
       streamRef.current = null;
     };
   }, [dispatch, enabled, organizationId, refresh]);

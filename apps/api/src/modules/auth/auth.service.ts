@@ -149,7 +149,6 @@ export class AuthService {
         status: true,
         emailVerifiedAt: true,
         lockedUntil: true,
-        failedLoginAttempts: true,
       },
     });
 
@@ -177,7 +176,7 @@ export class AuthService {
     }
 
     if (!(await this.hasher.verify(dto.password, user.passwordHash))) {
-      await this.recordFailedLogin(user.id, user.failedLoginAttempts, meta);
+      await this.recordFailedLogin(user.id, meta);
       throw invalidCredentials();
     }
 
@@ -449,25 +448,27 @@ export class AuthService {
     };
   }
 
-  private async recordFailedLogin(
-    userId: string,
-    previousAttempts: number,
-    meta: RequestMeta,
-  ): Promise<void> {
+  private async recordFailedLogin(userId: string, meta: RequestMeta): Promise<void> {
     const { lockoutThreshold, lockoutDurationMs } = this.config.auth;
-    const locked = previousAttempts + 1 >= lockoutThreshold;
-    await this.prisma.user.update({
+    const { failedLoginAttempts: attempt } = await this.prisma.user.update({
       where: { id: userId },
-      data: locked
-        ? { failedLoginAttempts: 0, lockedUntil: new Date(Date.now() + lockoutDurationMs) }
-        : { failedLoginAttempts: { increment: 1 } },
+      data: { failedLoginAttempts: { increment: 1 } },
+      select: { failedLoginAttempts: true },
     });
+    const locked =
+      attempt >= lockoutThreshold &&
+      (
+        await this.prisma.user.updateMany({
+          where: { id: userId, failedLoginAttempts: { gte: lockoutThreshold } },
+          data: { failedLoginAttempts: 0, lockedUntil: new Date(Date.now() + lockoutDurationMs) },
+        })
+      ).count === 1;
     await this.audit.record({
       action: locked ? AuditAction.AccountLocked : AuditAction.LoginFailed,
       actorUserId: userId,
       entityType: 'user',
       entityId: userId,
-      changes: { reason: 'wrong_password', attempt: previousAttempts + 1 },
+      changes: { reason: 'wrong_password', attempt },
       meta,
     });
   }

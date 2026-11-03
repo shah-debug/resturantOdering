@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   assignRiderRequestSchema,
+  maskPhoneNumber,
   ORDER_VIEW_STATUSES,
   ORDER_VIEWS,
   type OrderCounts,
@@ -140,7 +141,9 @@ export class OrderOperationsService {
       branchId: row.branchId,
       branchName: row.branch.name,
       customerName: row.customerName,
-      customerPhone: row.customerPhone,
+      customerPhone: access.permissions.has(Permission.OrdersManage)
+        ? row.customerPhone
+        : maskPhoneNumber(row.customerPhone),
       deliveryArea: row.deliveryArea,
       itemCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
       lines: row.items.map((item) => ({
@@ -264,7 +267,10 @@ export class OrderOperationsService {
       restaurantName: row.organization.name,
       cancellationReason: row.cancellationReason,
       delivery:
-        row.type === 'DELIVERY' && row.deliveryAddressLine && row.deliveryCity
+        row.type === 'DELIVERY' &&
+        row.deliveryAddressLine &&
+        row.deliveryCity &&
+        access.permissions.has(Permission.OrdersManage)
           ? {
               addressLine: row.deliveryAddressLine,
               area: row.deliveryArea,

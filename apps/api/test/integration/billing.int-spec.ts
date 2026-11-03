@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   apiErrorResponseSchema,
   billingOverviewSchema,
@@ -655,6 +656,40 @@ describe('subscriptions and billing (in-memory Postgres)', () => {
       expect(renewed).toMatchObject({ status: 'ACTIVE' });
       expect(renewed.currentPeriodStart.getTime()).toBe(end.getTime());
       expect(renewed.currentPeriodEnd.getTime()).toBe(next?.periodEnd.getTime());
+    });
+
+    it('marks an invoice paid only once split payments together cover it', async () => {
+      const splitId = await createRestaurant(owner, `split-${randomUUID().slice(0, 6)}`);
+      const invoice = (await subscription(splitId)).invoices.find(
+        (entry) => entry.status === 'OPEN',
+      );
+      const half = Math.ceil((invoice?.amountMinor ?? 0) / 2);
+      const payments = [];
+      for (const reference of ['SPLIT-PART-1', 'SPLIT-PART-2']) {
+        payments.push(
+          subscriptionPaymentSchema.parse(
+            (
+              await submit(owner, splitId, await paymentFields(splitId, reference, half)).expect(
+                201,
+              )
+            ).body,
+          ),
+        );
+      }
+      await adminA
+        .post(`/platform/billing/payments/${payments[0]?.id ?? ''}/review`, { decision: 'VERIFY' })
+        .expect(200);
+      const afterFirst = await harness.prisma.subscriptionInvoice.findUniqueOrThrow({
+        where: { id: invoice?.id ?? '' },
+      });
+      expect(afterFirst.status).toBe('OPEN');
+      await adminA
+        .post(`/platform/billing/payments/${payments[1]?.id ?? ''}/review`, { decision: 'VERIFY' })
+        .expect(200);
+      const afterSecond = await harness.prisma.subscriptionInvoice.findUniqueOrThrow({
+        where: { id: invoice?.id ?? '' },
+      });
+      expect(afterSecond.status).toBe('PAID');
     });
 
     it('cancels at the end of the period and expires long suspensions without deleting data', async () => {

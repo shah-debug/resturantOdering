@@ -1,16 +1,27 @@
 const DAY_MS = 86_400_000;
 
+const partFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function partFormatter(timeZone: string): Intl.DateTimeFormat {
+  let formatter = partFormatters.get(timeZone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    partFormatters.set(timeZone, formatter);
+  }
+  return formatter;
+}
+
 function partsIn(instant: number, timeZone: string): Record<string, number> {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).formatToParts(new Date(instant));
+  const parts = partFormatter(timeZone).formatToParts(new Date(instant));
   return Object.fromEntries(
     parts.filter((part) => part.type !== 'literal').map((part) => [part.type, Number(part.value)]),
   );

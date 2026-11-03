@@ -306,6 +306,11 @@ export class ReportsService {
       },
     });
     const rupees = (minor: number) => (minor / 100).toFixed(2);
+    const placedFormat = new Intl.DateTimeFormat('en-GB', {
+      timeZone: scope.timezone,
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
     const rows: (string | number | null)[][] = [
       [
         'Order number',
@@ -327,11 +332,7 @@ export class ReportsService {
       ],
       ...orders.map((order) => [
         order.orderNumber,
-        new Intl.DateTimeFormat('en-GB', {
-          timeZone: scope.timezone,
-          dateStyle: 'short',
-          timeStyle: 'short',
-        }).format(order.placedAt),
+        placedFormat.format(order.placedAt),
         localDateOf(order.placedAt, scope.timezone),
         order.branch.name,
         order.type,

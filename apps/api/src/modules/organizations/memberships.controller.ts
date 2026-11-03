@@ -35,7 +35,7 @@ export class MembershipsController {
     @CurrentOrganization() access: OrganizationAccess,
     @Query() query: PaginationQueryDto,
   ): Promise<Paginated<Member>> {
-    return this.memberships.list(access.organizationId, query.page, query.pageSize);
+    return this.memberships.list(access, query.page, query.pageSize);
   }
 
   @Post()

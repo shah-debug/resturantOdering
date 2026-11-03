@@ -140,6 +140,23 @@ describe('authentication (in-memory Postgres)', () => {
       expect(errorCode(locked.body)).toBe('ACCOUNT_LOCKED');
     });
 
+    it('still locks the account when wrong passwords arrive all at once', async () => {
+      const email = uniqueEmail('lockout-burst');
+      await signUpAndVerify(harness, email);
+      const statuses = await Promise.all(
+        Array.from({ length: 6 }, () =>
+          new Client(harness.app)
+            .post('/auth/login', { email, password: 'wrong password!!' })
+            .then((response) => response.status),
+        ),
+      );
+      expect(statuses.every((status) => status === 401 || status === 423)).toBe(true);
+      const locked = await new Client(harness.app)
+        .post('/auth/login', { email, password: PASSWORD })
+        .expect(423);
+      expect(errorCode(locked.body)).toBe('ACCOUNT_LOCKED');
+    });
+
     it('rejects requests without a session, or with a forged one', async () => {
       await new Client(harness.app).get('/auth/me').expect(401);
       const forged = await new Client(harness.app, 'session=forged-token-value-that-does-not-exist')

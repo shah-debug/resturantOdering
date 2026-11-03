@@ -73,6 +73,32 @@ describe('OrderTrackingView', () => {
     navigation.refresh.mockClear();
   });
 
+  it('only refreshes while the customer is looking, and catches up when they return', () => {
+    vi.useFakeTimers();
+    let visibility: DocumentVisibilityState = 'hidden';
+    const spy = vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
+    try {
+      mockApi(() => undefined);
+      const view = renderWithStore(
+        <OrderTrackingView order={order()} token={TOKEN} justPlaced={false} />,
+        makeStore(),
+      );
+      vi.advanceTimersByTime(5 * 60_000);
+      expect(navigation.refresh).not.toHaveBeenCalled();
+      visibility = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(navigation.refresh).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(30_000);
+      expect(navigation.refresh).toHaveBeenCalledTimes(2);
+      view.unmount();
+      vi.advanceTimersByTime(60_000);
+      expect(navigation.refresh).toHaveBeenCalledTimes(2);
+    } finally {
+      spy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it('confirms a new order and shows what is due on delivery', () => {
     mockApi(() => undefined);
     renderWithStore(<OrderTrackingView order={order()} token={TOKEN} justPlaced />, makeStore());
