@@ -75,3 +75,4 @@ Tenant isolation is a security requirement, enforced in layers:
 | 10    | Reports and platform admin (see [reports-and-platform.md](reports-and-platform.md))                                                | Done  |
 | 11    | SaaS plans, trials, subscriptions and manual billing (see [billing.md](billing.md))                                                | Done  |
 | 12    | Production-readiness audit (see [production-readiness-audit.md](production-readiness-audit.md) and [operations.md](operations.md)) | Done  |
+| 13    | Deployment and pilot launch preparation (see [deployment.md](deployment.md) and [pilot-launch.md](pilot-launch.md))                | Done  |

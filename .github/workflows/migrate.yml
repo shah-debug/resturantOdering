@@ -1,0 +1,68 @@
+name: Database migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        required: true
+      confirm:
+        description: Type the environment name again to confirm
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrate-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - name: Check confirmation
+        if: inputs.confirm != inputs.environment
+        working-directory: .
+        run: |
+          echo "Confirmation does not match the selected environment." >&2
+          exit 1
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        working-directory: .
+      - name: Refuse unapproved destructive SQL
+        run: pnpm db:migrate:check
+      - name: Install database CA certificate
+        env:
+          SUPABASE_CA_CERT: ${{ secrets.SUPABASE_CA_CERT }}
+        run: |
+          umask 077
+          mkdir -p certs
+          printf '%s\n' "$SUPABASE_CA_CERT" > certs/supabase-ca.crt
+      - name: Pending migrations (before)
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: pnpm exec prisma migrate status || true
+      - name: Apply pending migrations
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: pnpm db:migrate:deploy
+      - name: Confirm nothing is pending
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: pnpm db:migrate:status
+      - name: Remove certificate
+        if: always()
+        run: rm -f certs/supabase-ca.crt

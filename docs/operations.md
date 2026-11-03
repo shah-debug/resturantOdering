@@ -69,7 +69,7 @@ Before adding a second instance, move both to shared infrastructure: a Redis thr
 
 ## Migrations
 
-Migrations are applied with `pnpm --filter @app/api db:migrate:deploy`. It only applies pending migrations; it never resets or drops anything.
+Staging and production migrations run through the approval-gated GitHub workflow **Database migrations**, which also refuses unapproved destructive SQL (`db:migrate:check`); see [deployment.md](deployment.md#migrations). Under the hood it runs `pnpm --filter @app/api db:migrate:deploy`. It only applies pending migrations; it never resets or drops anything.
 
 1. Take a backup, as below.
 2. Apply the migrations to a non-production copy first.

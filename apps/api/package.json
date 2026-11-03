@@ -14,6 +14,7 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate:status": "prisma migrate status",
+    "db:migrate:check": "tsx prisma/check-migrations.ts",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "test:integration": "vitest run --project integration"
