@@ -238,6 +238,27 @@ describe('subscriptions and billing (in-memory Postgres)', () => {
       );
     });
 
+    it('gives each owner one free trial, and bills later restaurants from tonight', async () => {
+      const repeatId = await createRestaurant(owner, `repeat-${randomUUID().slice(0, 6)}`);
+      const repeat = await subscription(repeatId);
+      expect(repeat.status).toBe('TRIALING');
+      expect(repeat.trialEndsAt?.getTime()).toBe(repeat.currentPeriodStart.getTime() + DAY);
+      expect(repeat.invoices[0]).toMatchObject({ status: 'OPEN', amountMinor: 300_000 });
+
+      const newcomer = await registerUser(harness, 'billing-newcomer');
+      const freshId = await createRestaurant(newcomer.client, `fresh-${randomUUID().slice(0, 6)}`);
+      const fresh = await subscription(freshId);
+      expect(fresh.trialEndsAt?.getTime()).toBe(fresh.currentPeriodStart.getTime() + 14 * DAY);
+      for (const id of [repeatId, freshId]) {
+        await adminA
+          .post(`/platform/organizations/${id}/subscription/cancel`, {
+            mode: 'NOW',
+            reason: 'Test restaurant, no longer needed',
+          })
+          .expect(204);
+      }
+    });
+
     it('leaves restaurants without a plan unmanaged and unlimited', async () => {
       expect((await state(owner, legacyId)).standing).toBe('unmanaged');
       await owner
@@ -391,6 +412,14 @@ describe('subscriptions and billing (in-memory Postgres)', () => {
         ...(await paymentFields(otherId, 'TXN12345678')),
         method: 'JAZZCASH',
       }).expect(201);
+      const attempts = await harness.prisma.auditLog.findMany({
+        where: { action: 'billing.payment_reference_duplicate', organizationId: otherId },
+      });
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0]?.changes).toMatchObject({
+        referenceKey: 'TXN12345678',
+        otherRestaurant: true,
+      });
     });
 
     it('validates the payment details and evidence type', async () => {

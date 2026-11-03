@@ -1,6 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { Public } from '../src/modules/auth/http/decorators';
-import { StorefrontRateLimit } from '../src/modules/storefront/storefront-rate-limit';
+import {
+  PromoRateLimit,
+  StorefrontRateLimit,
+} from '../src/modules/storefront/storefront-rate-limit';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { apiErrorResponseSchema } from '@app/contracts';
 import request from 'supertest';
@@ -25,6 +28,18 @@ class StorefrontProbeController {
   }
 }
 
+@Public()
+@Controller('promo-probe')
+class PromoProbeController {
+  @Post()
+  @HttpCode(200)
+  @PromoRateLimit()
+  probe(@Body() _body: unknown): { ok: true } {
+    return { ok: true };
+  }
+}
+
+const PROMO_LIMIT = 2;
 const LIMIT = 3;
 const STOREFRONT_LIMIT = 6;
 const PROBE = '/api/v1/rate-limit-probe';
@@ -41,9 +56,10 @@ describe('Rate limiting (e2e)', () => {
       env: {
         RATE_LIMIT_MAX_REQUESTS: String(LIMIT),
         STOREFRONT_RATE_LIMIT_MAX_REQUESTS: String(STOREFRONT_LIMIT),
+        PROMO_RATE_LIMIT_MAX_REQUESTS: String(PROMO_LIMIT),
         TRUST_PROXY_HOPS: '1',
       },
-      controllers: [RateLimitProbeController, StorefrontProbeController],
+      controllers: [RateLimitProbeController, StorefrontProbeController, PromoProbeController],
     });
   });
 
@@ -86,5 +102,21 @@ describe('Rate limiting (e2e)', () => {
     }
     await storefront().expect(429);
     await fromClient(app, '203.0.113.40').expect(200);
+  });
+
+  it('limits attempts that carry a promotion code without slowing ordinary quotes', async () => {
+    const post = (body: object, ip = '203.0.113.40') =>
+      request(app.getHttpServer())
+        .post('/api/v1/promo-probe')
+        .set('Origin', 'http://localhost:3000')
+        .set('X-Forwarded-For', ip)
+        .send(body);
+    for (let attempt = 0; attempt < PROMO_LIMIT; attempt += 1) {
+      await post({ promoCode: `GUESS${attempt}` }).expect(200);
+    }
+    await post({ promoCode: 'GUESS9' }).expect(429);
+    await post({}, '203.0.113.41').expect(200);
+    await post({ promoCode: '  ' }, '203.0.113.41').expect(200);
+    await post({}, '203.0.113.41').expect(200);
   });
 });

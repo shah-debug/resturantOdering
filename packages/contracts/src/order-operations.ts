@@ -93,6 +93,8 @@ export const orderListItemSchema = z.object({
     }),
   ),
   customerNote: z.string().nullable(),
+  customerOrderCount: z.number().int().min(0),
+  customerBlocked: z.boolean(),
   totalMinor: z.number().int(),
   paymentMethod: paymentMethodSchema,
   paymentStatus: orderPaymentStatusSchema,
@@ -173,6 +175,12 @@ export const orderTransitionRequestSchema = z
     path: ['reason'],
   });
 export type OrderTransitionRequest = z.infer<typeof orderTransitionRequestSchema>;
+
+export const customerBlockRequestSchema = z.discriminatedUnion('blocked', [
+  z.object({ blocked: z.literal(true), reason: z.string().trim().min(5).max(300) }).strict(),
+  z.object({ blocked: z.literal(false) }).strict(),
+]);
+export type CustomerBlockRequest = z.infer<typeof customerBlockRequestSchema>;
 
 export const assignRiderRequestSchema = z
   .object({

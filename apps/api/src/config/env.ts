@@ -40,6 +40,7 @@ export const envSchema = z
     AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
     AUTH_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(10),
     STOREFRONT_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(600),
+    PROMO_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(20),
     DATABASE_URL: postgresUrl,
     DATABASE_SSL_CA_PATH: z.string().min(1).optional(),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),

@@ -63,7 +63,11 @@ export class OrganizationAccessGuard implements CanActivate {
       throw new AppException(HttpStatus.FORBIDDEN, 'FORBIDDEN', 'This organization is not active');
     }
 
-    const permissions = permissionsFor(activeMembership?.role ?? null, platformRole);
+    const permissions = permissionsFor(
+      activeMembership?.role ?? null,
+      platformRole,
+      activeMembership?.branchId ?? null,
+    );
     const required =
       this.reflector.getAllAndOverride<Permission[] | undefined>(REQUIRED_PERMISSIONS_KEY, [
         context.getHandler(),

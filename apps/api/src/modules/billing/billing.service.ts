@@ -141,9 +141,22 @@ export class BillingService {
     const referenceKey = normalizePaymentReference(dto.reference);
     const duplicate = await this.prisma.subscriptionPayment.findFirst({
       where: { method: dto.method, referenceKey, status: { not: 'REJECTED' } },
-      select: { id: true },
+      select: { id: true, organizationId: true },
     });
     if (duplicate) {
+      await this.audit.record({
+        action: AuditAction.BillingPaymentReferenceDuplicate,
+        actorUserId: auth.user.id,
+        organizationId,
+        entityType: 'subscription_payment',
+        entityId: duplicate.id,
+        changes: {
+          method: dto.method,
+          referenceKey,
+          otherRestaurant: duplicate.organizationId !== organizationId,
+        },
+        meta,
+      });
       throw duplicateReference();
     }
 

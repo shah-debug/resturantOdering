@@ -68,14 +68,25 @@ export const PLATFORM_ROLE_PERMISSIONS: Readonly<Record<PlatformRole, readonly P
   ],
 };
 
+export const ORGANIZATION_WIDE_PERMISSIONS: readonly Permission[] = [
+  Permission.OrganizationUpdate,
+  Permission.MenuManage,
+  Permission.BillingRead,
+  Permission.BillingManage,
+];
+
 export function permissionsFor(
   role: MembershipRole | null,
   platformRole: PlatformRole | null,
+  branchId: string | null = null,
 ): ReadonlySet<Permission> {
-  return new Set([
-    ...(role ? ROLE_PERMISSIONS[role] : []),
-    ...(platformRole ? PLATFORM_ROLE_PERMISSIONS[platformRole] : []),
-  ]);
+  const branchScoped = branchId !== null && role !== MembershipRole.OWNER;
+  const fromRole = role
+    ? ROLE_PERMISSIONS[role].filter(
+        (permission) => !(branchScoped && ORGANIZATION_WIDE_PERMISSIONS.includes(permission)),
+      )
+    : [];
+  return new Set([...fromRole, ...(platformRole ? PLATFORM_ROLE_PERMISSIONS[platformRole] : [])]);
 }
 
 const ASSIGNABLE_ROLES: Readonly<Record<MembershipRole, readonly MembershipRole[]>> = {

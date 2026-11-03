@@ -109,4 +109,16 @@ export class OrderOperationsController {
   ): Promise<OrderDetail> {
     return this.orders.assignRider(access, auth, orderId, body, requestMeta(request));
   }
+
+  @Put(':orderId/customer-block')
+  @OrganizationRoute(Permission.OrdersManage)
+  setCustomerBlocked(
+    @CurrentOrganization() access: OrganizationAccess,
+    @CurrentAuth() auth: AuthContext,
+    @Param('orderId') orderId: string,
+    @Body() body: unknown,
+    @Req() request: Request,
+  ): Promise<OrderDetail> {
+    return this.orders.setCustomerBlocked(access, auth, orderId, body, requestMeta(request));
+  }
 }

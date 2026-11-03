@@ -16,6 +16,7 @@ import { useListRidersQuery } from '@/features/riders/riders-api';
 import { useFallbackPolling } from '../live-orders';
 import { formatDateTime, STATUS_LABELS, statusVariant } from '../order-labels';
 import { useAssignRiderMutation, useGetOrderQuery } from '../orders-api';
+import { CustomerSafety } from './customer-safety';
 import { TransitionControls } from './transition-controls';
 
 function RiderAssignment({
@@ -263,6 +264,7 @@ export function OrderDetailPage({
               Customer
             </h2>
             <p>{order.customerName}</p>
+            <CustomerSafety organizationId={organizationId} order={order} />
             {/^\+\d+$/.test(order.customerPhone) ? (
               <a
                 href={`tel:${order.customerPhone}`}

@@ -18,6 +18,8 @@ export function orderListItem(overrides: Partial<OrderListItem> = {}): OrderList
     itemCount: 2,
     lines: [{ productName: 'Chicken Karahi', variantName: 'Half', quantity: 2, addOns: ['Naan'] }],
     customerNote: 'Less spicy',
+    customerOrderCount: 3,
+    customerBlocked: false,
     totalMinor: 315_000,
     paymentMethod: 'CASH',
     paymentStatus: 'UNPAID',

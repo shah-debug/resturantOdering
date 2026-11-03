@@ -667,6 +667,80 @@ describe('order operations (in-memory Postgres)', () => {
     });
   });
 
+  describe('suspicious customers', () => {
+    it('flags first orders and lets order staff block and unblock a number', async () => {
+      const phone = `+92301${String(Date.now()).slice(-7)}`;
+      const placeFrom = async () => {
+        const body = {
+          branchId: restaurant.branchIds[0],
+          fulfillment: { type: 'PICKUP' },
+          paymentMethod: 'CASH',
+          items: [
+            {
+              productId: restaurant.karahiId,
+              variantId: restaurant.halfId,
+              addOnIds: [restaurant.naanId],
+              quantity: 1,
+            },
+          ],
+        };
+        const priced = checkoutQuoteSchema.parse(
+          (await publicPost(`/${restaurant.slug}/checkout/quote`, body).expect(200)).body,
+        );
+        return publicPost(
+          `/${restaurant.slug}/orders`,
+          {
+            ...body,
+            customer: { name: 'Prank Caller', phone },
+            expectedTotalMinor: priced.totals?.totalMinor ?? 0,
+          },
+          { 'Idempotency-Key': randomUUID() },
+        );
+      };
+      const first = placedOrderSchema.parse((await placeFrom()).body);
+      const detail = orderDetailSchema.parse(
+        (await orderStaff.get(`${orders}/${first.orderId}`).expect(200)).body,
+      );
+      expect(detail).toMatchObject({ customerOrderCount: 1, customerBlocked: false });
+
+      const block = (client: Client, body: object) =>
+        client.put(`${orders}/${first.orderId}/customer-block`, body);
+      await block(kitchen, { blocked: true, reason: 'Fake order' }).expect(403);
+      await block(orderStaff, { blocked: true }).expect(400);
+      const blocked = orderDetailSchema.parse(
+        (
+          await block(orderStaff, {
+            blocked: true,
+            reason: 'Nobody answered, fake address',
+          }).expect(200)
+        ).body,
+      );
+      expect(blocked.customerBlocked).toBe(true);
+      const refused = await placeFrom();
+      expect(refused.status).toBe(422);
+      expect(code(refused.body)).toBe('CHECKOUT_REJECTED');
+
+      await block(orderStaff, { blocked: false }).expect(200);
+      const second = placedOrderSchema.parse((await placeFrom()).body);
+      const again = orderDetailSchema.parse(
+        (await orderStaff.get(`${orders}/${second.orderId}`).expect(200)).body,
+      );
+      expect(again).toMatchObject({ customerOrderCount: 2, customerBlocked: false });
+      const audit = await harness.prisma.auditLog.findMany({
+        where: {
+          organizationId: restaurant.id,
+          action: { in: ['customer.blocked', 'customer.unblocked'] },
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(audit.map((entry) => entry.action)).toEqual([
+        'customer.blocked',
+        'customer.unblocked',
+      ]);
+      expect(audit[0]?.changes).toMatchObject({ reason: 'Nobody answered, fake address' });
+    });
+  });
+
   describe('customer tracking after staff actions', () => {
     it('does not reveal riders, reasons or staff names', async () => {
       const rider = await createRider(owner, 0, '+923004440001');

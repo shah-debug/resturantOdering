@@ -11,9 +11,14 @@ import {
   UserStatus,
 } from '../../generated/prisma/enums.js';
 import { AuditAction, AuditService } from '../audit/audit.service.js';
-import { accountExistsEmail, passwordResetEmail, verificationEmail } from '../mail/auth-emails.js';
+import {
+  accountExistsEmail,
+  accountLockedEmail,
+  passwordResetEmail,
+  verificationEmail,
+} from '../mail/auth-emails.js';
 import { Mailer, type MailMessage } from '../mail/mailer.js';
-import { AuthTokenService } from './auth-token.service.js';
+import { AuthTokenService, EMAIL_COOLDOWN_MS } from './auth-token.service.js';
 import { PasswordHasher } from './crypto/password-hasher.js';
 import type {
   AcceptInvitationDto,
@@ -126,7 +131,17 @@ export class AuthService {
       where: { email },
       select: { id: true, status: true, emailVerifiedAt: true },
     });
-    if (!user || user.emailVerifiedAt || user.status !== UserStatus.ACTIVE) {
+    if (
+      !user ||
+      user.emailVerifiedAt ||
+      user.status !== UserStatus.ACTIVE ||
+      (await this.tokens.issuedWithin(
+        this.prisma,
+        user.id,
+        AuthTokenPurpose.EMAIL_VERIFICATION,
+        EMAIL_COOLDOWN_MS,
+      ))
+    ) {
       return;
     }
     const token = await this.tokens.issue(
@@ -167,16 +182,20 @@ export class AuthService {
 
     const now = new Date();
     if (user.lockedUntil && user.lockedUntil > now) {
-      const minutes = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 60_000);
-      throw new AppException(
-        HttpStatus.LOCKED,
-        'ACCOUNT_LOCKED',
-        `Too many failed sign-in attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`,
-      );
+      await this.hasher.verify(dto.password, await this.getDummyHash());
+      await this.audit.record({
+        action: AuditAction.LoginFailed,
+        actorUserId: user.id,
+        entityType: 'user',
+        entityId: user.id,
+        changes: { reason: 'locked' },
+        meta,
+      });
+      throw invalidCredentials();
     }
 
     if (!(await this.hasher.verify(dto.password, user.passwordHash))) {
-      await this.recordFailedLogin(user.id, meta);
+      await this.recordFailedLogin(user.id, dto.email, meta);
       throw invalidCredentials();
     }
 
@@ -252,7 +271,16 @@ export class AuthService {
       where: { email },
       select: { id: true, status: true },
     });
-    if (!user || user.status !== UserStatus.ACTIVE) {
+    if (
+      !user ||
+      user.status !== UserStatus.ACTIVE ||
+      (await this.tokens.issuedWithin(
+        this.prisma,
+        user.id,
+        AuthTokenPurpose.PASSWORD_RESET,
+        EMAIL_COOLDOWN_MS,
+      ))
+    ) {
       return;
     }
     const token = await this.tokens.issue(this.prisma, user.id, AuthTokenPurpose.PASSWORD_RESET);
@@ -448,7 +476,7 @@ export class AuthService {
     };
   }
 
-  private async recordFailedLogin(userId: string, meta: RequestMeta): Promise<void> {
+  private async recordFailedLogin(userId: string, email: string, meta: RequestMeta): Promise<void> {
     const { lockoutThreshold, lockoutDurationMs } = this.config.auth;
     const { failedLoginAttempts: attempt } = await this.prisma.user.update({
       where: { id: userId },
@@ -471,6 +499,11 @@ export class AuthService {
       changes: { reason: 'wrong_password', attempt },
       meta,
     });
+    if (locked) {
+      await this.deliver(
+        accountLockedEmail(email, this.config.dashboardUrl, Math.ceil(lockoutDurationMs / 60_000)),
+      );
+    }
   }
 
   private getDummyHash(): Promise<string> {

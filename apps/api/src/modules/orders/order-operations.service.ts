@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   assignRiderRequestSchema,
+  customerBlockRequestSchema,
   maskPhoneNumber,
   ORDER_VIEW_STATUSES,
   ORDER_VIEWS,
@@ -46,6 +47,8 @@ const listSelect = {
   branch: { select: { name: true } },
   rider: { select: { id: true, fullName: true, phone: true } },
   customerNote: true,
+  customerId: true,
+  customer: { select: { blockedAt: true, _count: { select: { orders: true } } } },
   items: {
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     select: {
@@ -153,6 +156,8 @@ export class OrderOperationsService {
         addOns: item.addOns.map((addOn) => addOn.name),
       })),
       customerNote: row.customerNote,
+      customerOrderCount: row.customer._count.orders,
+      customerBlocked: row.customer.blockedAt !== null,
       totalMinor: row.totalMinor,
       paymentMethod: row.paymentMethod,
       paymentStatus: row.paymentStatus,
@@ -255,6 +260,36 @@ export class OrderOperationsService {
       throw orderNotFound();
     }
     return order;
+  }
+
+  async setCustomerBlocked(
+    access: OrganizationAccess,
+    auth: AuthContext,
+    orderId: string,
+    body: unknown,
+    meta: RequestMeta,
+  ): Promise<OrderDetail> {
+    const dto = assertValid(customerBlockRequestSchema, body);
+    const order = await this.findScoped(access, orderId);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.customer.updateMany({
+        where: { id: order.customerId, organizationId: access.organizationId },
+        data: { blockedAt: dto.blocked ? new Date() : null },
+      });
+      await this.audit.record(
+        {
+          action: dto.blocked ? AuditAction.CustomerBlocked : AuditAction.CustomerUnblocked,
+          actorUserId: auth.user.id,
+          organizationId: access.organizationId,
+          entityType: 'customer',
+          entityId: order.customerId,
+          changes: { orderId: order.id, ...(dto.blocked ? { reason: dto.reason } : {}) },
+          meta,
+        },
+        tx,
+      );
+    });
+    return this.detail(access, orderId);
   }
 
   async detail(access: OrganizationAccess, orderId: string): Promise<OrderDetail> {

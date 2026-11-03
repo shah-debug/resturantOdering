@@ -129,15 +129,24 @@ describe('authentication (in-memory Postgres)', () => {
       expect(wrongPassword.headers['set-cookie']).toBeUndefined();
     });
 
-    it('locks the account after repeated failures, even for the right password', async () => {
+    it('locks the account after repeated failures without revealing that it exists', async () => {
       const email = uniqueEmail('lockout');
       await signUpAndVerify(harness, email);
       const anonymous = new Client(harness.app);
       for (let attempt = 0; attempt < 3; attempt += 1) {
         await anonymous.post('/auth/login', { email, password: 'wrong password!!' }).expect(401);
       }
-      const locked = await anonymous.post('/auth/login', { email, password: PASSWORD }).expect(423);
-      expect(errorCode(locked.body)).toBe('ACCOUNT_LOCKED');
+      const locked = await anonymous.post('/auth/login', { email, password: PASSWORD }).expect(401);
+      const unknown = await anonymous
+        .post('/auth/login', { email: uniqueEmail('nobody'), password: PASSWORD })
+        .expect(401);
+      const visible = (body: unknown) => {
+        const { timestamp: _timestamp, ...rest } = apiErrorResponseSchema.parse(body);
+        return rest;
+      };
+      expect(visible(locked.body)).toEqual(visible(unknown.body));
+      expect(errorCode(locked.body)).toBe('INVALID_CREDENTIALS');
+      expect(harness.mailer.latestTo(email)?.subject).toBe('Sign-in paused after failed attempts');
     });
 
     it('still locks the account when wrong passwords arrive all at once', async () => {
@@ -150,11 +159,11 @@ describe('authentication (in-memory Postgres)', () => {
             .then((response) => response.status),
         ),
       );
-      expect(statuses.every((status) => status === 401 || status === 423)).toBe(true);
+      expect(statuses.every((status) => status === 401)).toBe(true);
       const locked = await new Client(harness.app)
         .post('/auth/login', { email, password: PASSWORD })
-        .expect(423);
-      expect(errorCode(locked.body)).toBe('ACCOUNT_LOCKED');
+        .expect(401);
+      expect(errorCode(locked.body)).toBe('INVALID_CREDENTIALS');
     });
 
     it('rejects requests without a session, or with a forged one', async () => {
@@ -215,6 +224,24 @@ describe('authentication (in-memory Postgres)', () => {
       await anonymous.post('/auth/password/reset', { token, password: newPassword }).expect(400);
       await anonymous.post('/auth/login', { email, password: PASSWORD }).expect(401);
       await logIn(harness, email, newPassword);
+    });
+
+    it('sends at most one reset email per account every two minutes', async () => {
+      const { email } = await registerUser(harness, 'reset-flood');
+      const resets = () =>
+        harness.mailer.messages.filter(
+          (message) => message.to === email && message.text.includes('/reset-password'),
+        ).length;
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        await new Client(harness.app).post('/auth/password/forgot', { email }).expect(202);
+      }
+      expect(resets()).toBe(1);
+      await harness.prisma.authToken.updateMany({
+        where: { user: { email }, purpose: 'PASSWORD_RESET' },
+        data: { createdAt: new Date(Date.now() - 3 * 60_000) },
+      });
+      await new Client(harness.app).post('/auth/password/forgot', { email }).expect(202);
+      expect(resets()).toBe(2);
     });
 
     it('does not reveal whether an email exists when requesting a reset', async () => {

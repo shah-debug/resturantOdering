@@ -8,6 +8,7 @@ export interface RateLimitConfig {
   sensitiveWindowMs: number;
   sensitiveMaxRequests: number;
   storefrontMaxRequests: number;
+  promoMaxRequests: number;
 }
 
 export interface DatabaseConfig {
@@ -101,6 +102,7 @@ export class AppConfig {
       sensitiveWindowMs: this.env.AUTH_RATE_LIMIT_WINDOW_SECONDS * 1000,
       sensitiveMaxRequests: this.env.AUTH_RATE_LIMIT_MAX_REQUESTS,
       storefrontMaxRequests: this.env.STOREFRONT_RATE_LIMIT_MAX_REQUESTS,
+      promoMaxRequests: this.env.PROMO_RATE_LIMIT_MAX_REQUESTS,
     };
   }
 

@@ -25,6 +25,7 @@ import {
   type CheckoutEvaluation,
   type CheckoutOrganization,
   evaluateCheckout,
+  PROMOTION_UNAVAILABLE,
 } from './checkout-evaluator.js';
 import { canTransitionOrderStatus, INITIAL_ORDER_STATUS } from './domain/order-status.js';
 import { createTrackingToken, verifyTrackingToken } from './domain/tracking-token.js';
@@ -222,8 +223,8 @@ export class CheckoutService {
               throw new AppException(
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 'CHECKOUT_REJECTED',
-                'This code has been fully redeemed',
-                [{ field: 'promoCode', message: 'This code has been fully redeemed' }],
+                PROMOTION_UNAVAILABLE,
+                [{ field: 'promoCode', message: PROMOTION_UNAVAILABLE }],
               );
             }
           }
@@ -233,7 +234,7 @@ export class CheckoutService {
             VALUES (${randomUUID()}::uuid, ${organization.id}::uuid, ${input.customer.phone},
                     ${input.customer.name}, now())
             ON CONFLICT (organization_id, phone)
-            DO UPDATE SET full_name = EXCLUDED.full_name, updated_at = now()
+            DO UPDATE SET updated_at = now()
             RETURNING id, blocked_at`;
           if (!customer || customer.blocked_at) {
             throw new AppException(

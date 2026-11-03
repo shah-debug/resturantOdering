@@ -14,6 +14,7 @@ import { type DeliveryZoneCandidate, matchDeliveryZone } from './domain/delivery
 import { type OrderPricing, percentageDiscount, priceOrder } from './domain/order-pricing.js';
 
 export const ENABLED_PAYMENT_METHODS: readonly PaymentMethod[] = ['CASH'];
+export const PROMOTION_UNAVAILABLE = 'This code can’t be used';
 
 export interface CheckoutInput {
   branchId: string;
@@ -298,11 +299,11 @@ export async function evaluateCheckout(
     const now = options.now;
     let problem: string | null = null;
     if (!found || !found.isActive || found.startsAt > now) {
-      problem = 'This code isn’t valid';
+      problem = PROMOTION_UNAVAILABLE;
     } else if (found.endsAt && found.endsAt <= now) {
-      problem = 'This code has expired';
+      problem = PROMOTION_UNAVAILABLE;
     } else if (found.usageLimit !== null && found.timesRedeemed >= found.usageLimit) {
-      problem = 'This code has been fully redeemed';
+      problem = PROMOTION_UNAVAILABLE;
     } else if (subtotalMinor < found.minOrderMinor) {
       problem = `Spend at least ${formatRupees(found.minOrderMinor)} to use this code`;
     } else if (found.type === 'FREE_DELIVERY' && input.fulfillment.type !== 'DELIVERY') {
@@ -317,12 +318,12 @@ export async function evaluateCheckout(
         },
       });
       if (used >= found.perCustomerLimit) {
-        problem = 'You have already used this code';
+        problem = PROMOTION_UNAVAILABLE;
       }
     }
 
     if (problem || !found) {
-      issues.push(issue('PROMOTION_INVALID', 'promoCode', problem ?? 'This code isn’t valid'));
+      issues.push(issue('PROMOTION_INVALID', 'promoCode', problem ?? PROMOTION_UNAVAILABLE));
     } else {
       promotion = { id: found.id, code: found.code, name: found.name };
       if (found.type === 'PERCENTAGE') {

@@ -16,6 +16,8 @@ import type { AuthContext, RequestMeta } from '../auth/http/request-context.js';
 import type { CreateOrganizationDto, UpdateOrganizationDto } from './dto/organization.dto.js';
 import { organizationSelect, toOrganization } from './organization.mappers.js';
 
+export const REPEAT_TRIAL_DAYS = 1;
+
 function slugTaken(): AppException {
   return new AppException(HttpStatus.CONFLICT, 'CONFLICT', 'This address is already taken', [
     { field: 'slug', message: 'This address is already taken' },
@@ -50,12 +52,22 @@ export class OrganizationsService {
         const defaultPlan = await tx.plan.findFirst({ where: { isDefault: true, isActive: true } });
         if (defaultPlan && defaultPlan.trialDays > 0) {
           const now = new Date();
+          const trialAlreadyUsed =
+            (await tx.subscription.count({
+              where: {
+                trialEndsAt: { not: null },
+                organization: {
+                  memberships: { some: { userId: auth.user.id, role: MembershipRole.OWNER } },
+                },
+              },
+            })) > 0;
+          const trialDays = trialAlreadyUsed ? REPEAT_TRIAL_DAYS : defaultPlan.trialDays;
           const trial = await startSubscription(tx, {
             organizationId: organization.id,
             timezone: organization.timezone,
             plan: defaultPlan,
             status: 'TRIALING',
-            trialDays: defaultPlan.trialDays,
+            trialDays,
             now,
           });
           await this.audit.record(
@@ -65,7 +77,7 @@ export class OrganizationsService {
               organizationId: organization.id,
               entityType: 'subscription',
               entityId: trial.id,
-              changes: { plan: defaultPlan.code, trialDays: defaultPlan.trialDays },
+              changes: { plan: defaultPlan.code, trialDays, trialAlreadyUsed },
               meta,
             },
             tx,

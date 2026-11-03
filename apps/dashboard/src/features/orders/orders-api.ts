@@ -1,5 +1,6 @@
 import {
   type AssignRiderRequest,
+  type CustomerBlockRequest,
   type OrderCounts,
   orderCountsSchema,
   type OrderDetail,
@@ -89,6 +90,15 @@ export const ordersApi = dashboardApi.injectEndpoints({
         'Rider',
       ],
     }),
+    setCustomerBlocked: build.mutation<OrderDetail, OrderTarget & { body: CustomerBlockRequest }>({
+      query: ({ organizationId, orderId, body }) => ({
+        url: `${ordersPath(organizationId)}/${encodeURIComponent(orderId)}/customer-block`,
+        method: 'PUT',
+        body,
+      }),
+      transformResponse: (response: unknown) => orderDetailSchema.parse(response),
+      invalidatesTags: [{ type: 'Order', id: 'LIST' }, 'Order'],
+    }),
   }),
 });
 
@@ -98,4 +108,5 @@ export const {
   useGetOrderQuery,
   useTransitionOrderMutation,
   useAssignRiderMutation,
+  useSetCustomerBlockedMutation,
 } = ordersApi;

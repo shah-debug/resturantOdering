@@ -17,6 +17,20 @@ export function verificationEmail(to: string, baseUrl: string, token: string): M
   };
 }
 
+export function accountLockedEmail(to: string, baseUrl: string, minutes: number): MailMessage {
+  return {
+    to,
+    subject: 'Sign-in paused after failed attempts',
+    text: [
+      `There were several failed sign-in attempts on your account, so signing in is paused for ${minutes} minutes.`,
+      'Your password still works: wait and try again, or reset your password now:',
+      `${baseUrl}/forgot-password`,
+      '',
+      'If these attempts were not you, resetting your password signs out every device.',
+    ].join('\n'),
+  };
+}
+
 export function accountExistsEmail(to: string, baseUrl: string): MailMessage {
   return {
     to,

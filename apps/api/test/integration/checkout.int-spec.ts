@@ -418,6 +418,22 @@ describe('guest checkout (in-memory Postgres)', () => {
       });
     });
 
+    it('keeps the stored customer name when someone else orders with the same phone', async () => {
+      const first = await placeBody(deliveryBody());
+      await place(first).expect(201);
+      const impostor = {
+        ...(await placeBody(deliveryBody())),
+        customer: { name: 'Someone Else', phone: PHONE },
+      };
+      const placed = placedOrderSchema.parse((await place(impostor).expect(201)).body);
+      const customer = await harness.prisma.customer.findUniqueOrThrow({
+        where: { organizationId_phone: { organizationId: karahi.organizationId, phone: PHONE } },
+      });
+      expect(customer.fullName).toBe('Ayesha Khan');
+      const order = await harness.prisma.order.findUniqueOrThrow({ where: { id: placed.orderId } });
+      expect(order.customerName).toBe('Someone Else');
+    });
+
     it('numbers orders per restaurant', async () => {
       const first = placedOrderSchema.parse(
         (await place(await placeBody(pickupBody())).expect(201)).body,
@@ -840,22 +856,21 @@ describe('guest checkout (in-memory Postgres)', () => {
       expect(order.items.reduce((sum, item) => sum + item.discountMinor, 0)).toBe(20_000);
     });
 
-    it('rejects expired, exhausted, per-customer and minimum-spend codes', async () => {
+    it('rejects expired, exhausted and per-customer codes without telling them apart', async () => {
       const issue = async (promoCode: string, body = pickupBody()) =>
         (await quote({ ...body, promoCode })).issues.map((item) => item.message);
-      expect(await issue('OLD')).toEqual(['This code has expired']);
-      expect(await issue('NOPE')).toEqual(['This code isn’t valid']);
+      const unusable = ['This code can’t be used'];
+      expect(await issue('OLD')).toEqual(unusable);
+      expect(await issue('NOPE')).toEqual(unusable);
       expect(await issue('BIGSPEND')).toEqual(['Spend at least Rs 10,000 to use this code']);
       expect(await issue('FREEDEL')).toEqual(['This code only applies to delivery orders']);
 
       await place(await placeBody(pickupBody({ promoCode: 'ONCE' }))).expect(201);
-      expect(await issue('ONCE')).toEqual(['This code has been fully redeemed']);
+      expect(await issue('ONCE')).toEqual(unusable);
 
       await place(await placeBody(pickupBody({ promoCode: 'MINE' }))).expect(201);
       const again = await place(await placeBody(pickupBody({ promoCode: 'MINE' }))).expect(422);
-      expect(apiErrorResponseSchema.parse(again.body).message).toBe(
-        'You have already used this code',
-      );
+      expect(apiErrorResponseSchema.parse(again.body).message).toBe('This code can’t be used');
     });
   });
 

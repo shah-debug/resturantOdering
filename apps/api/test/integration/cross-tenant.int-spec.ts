@@ -287,7 +287,11 @@ describe('cross-tenant attacks on every major resource (in-memory Postgres)', ()
         select: { id: true, status: true, riderId: true },
         orderBy: { id: 'asc' },
       }),
-      customers: await prisma.customer.count({ where: { organizationId: b.id } }),
+      customers: await prisma.customer.findMany({
+        where: { organizationId: b.id },
+        select: { id: true, fullName: true, blockedAt: true },
+        orderBy: { id: 'asc' },
+      }),
       memberships: await prisma.membership.findMany({
         where: { organizationId: b.id },
         select: { id: true, role: true, status: true },
@@ -353,6 +357,11 @@ describe('cross-tenant attacks on every major resource (in-memory Postgres)', ()
         attacker.put(`${base}/orders/${b.orderId}/rider`, {
           riderId: null,
           expectedRiderId: null,
+        }),
+      () =>
+        attacker.put(`${base}/orders/${b.orderId}/customer-block`, {
+          blocked: true,
+          reason: 'Rogue block',
         }),
       () => attacker.patch(`${base}/riders/${b.riderId}`, { status: 'INACTIVE' }),
       () =>
@@ -452,6 +461,11 @@ describe('cross-tenant attacks on every major resource (in-memory Postgres)', ()
           fullName: 'Rogue',
           phone: '+923009990000',
           vehicleType: 'CAR',
+        }),
+      () =>
+        attacker.put(`${base}/orders/${b.orderId}/customer-block`, {
+          blocked: true,
+          reason: 'Rogue block',
         }),
       () => attacker.patch(`${base}/riders/${b.riderId}`, { status: 'INACTIVE' }),
       () =>

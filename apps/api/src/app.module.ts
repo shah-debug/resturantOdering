@@ -25,7 +25,10 @@ import { ReportsModule } from './modules/reports/reports.module.js';
 import { RidersModule } from './modules/riders/riders.module.js';
 import { StorageModule } from './modules/storage/storage.module.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
-import { STOREFRONT_RATE_LIMIT_KEY } from './modules/storefront/storefront-rate-limit.js';
+import {
+  carriesPromoCode,
+  STOREFRONT_RATE_LIMIT_KEY,
+} from './modules/storefront/storefront-rate-limit.js';
 import { StorefrontModule } from './modules/storefront/storefront.module.js';
 
 @Module({
@@ -51,6 +54,12 @@ import { StorefrontModule } from './modules/storefront/storefront.module.js';
             limit: config.rateLimit.storefrontMaxRequests,
             skipIf: (context) =>
               Reflect.getMetadata(STOREFRONT_RATE_LIMIT_KEY, context.getHandler()) !== true,
+          },
+          {
+            name: 'promo',
+            ttl: config.rateLimit.windowMs,
+            limit: config.rateLimit.promoMaxRequests,
+            skipIf: (context) => !carriesPromoCode(context),
           },
           {
             name: 'sensitive',

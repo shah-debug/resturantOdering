@@ -21,7 +21,7 @@ import {
 import type { Request, Response } from 'express';
 import { OrganizationRoute } from '../access/organization-access.guard.js';
 import { Permission } from '../access/permissions.js';
-import { CurrentAuth, CurrentOrganization } from '../auth/http/decorators.js';
+import { CurrentAuth, CurrentOrganization, SensitiveRateLimit } from '../auth/http/decorators.js';
 import {
   type AuthContext,
   type OrganizationAccess,
@@ -64,6 +64,7 @@ export class BillingController {
 
   @Post('billing/payments')
   @OrganizationRoute(Permission.BillingManage)
+  @SensitiveRateLimit()
   @UseInterceptors(
     FileInterceptor('evidence', {
       limits: { fileSize: EVIDENCE_MAX_BYTES, files: 1, fields: 8, parts: 9, fieldSize: 4096 },

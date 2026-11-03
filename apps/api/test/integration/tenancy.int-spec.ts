@@ -264,6 +264,12 @@ describe('organization access and tenant isolation (in-memory Postgres)', () => 
         where: { id: south?.id },
       });
       expect(southBranch.name).toBe('south');
+      await scoped.client.patch(`/organizations/${orgA}`, { name: 'Branch takeover' }).expect(403);
+      await scoped.client
+        .post(`/organizations/${orgA}/menu/categories`, { name: 'Branch special' })
+        .expect(403);
+      await scoped.client.get(`/organizations/${orgA}/menu/categories`).expect(200);
+      await scoped.client.get(`/organizations/${orgA}/billing`).expect(403);
     });
 
     it('does not let managers change or remove owners', async () => {

@@ -5,6 +5,8 @@ import { hashToken, issueToken } from './crypto/secure-token.js';
 
 const HOUR_MS = 60 * 60 * 1000;
 
+export const EMAIL_COOLDOWN_MS = 2 * 60 * 1000;
+
 export const AUTH_TOKEN_TTL_MS: Readonly<Record<AuthTokenPurpose, number>> = {
   [AuthTokenPurpose.EMAIL_VERIFICATION]: 24 * HOUR_MS,
   [AuthTokenPurpose.PASSWORD_RESET]: HOUR_MS,
@@ -38,10 +40,24 @@ export class AuthTokenService {
         purpose,
         membershipId,
         tokenHash,
+        createdAt: now,
         expiresAt: new Date(now.getTime() + AUTH_TOKEN_TTL_MS[purpose]),
       },
     });
     return token;
+  }
+
+  async issuedWithin(
+    client: TokenClient,
+    userId: string,
+    purpose: AuthTokenPurpose,
+    windowMs: number,
+  ): Promise<boolean> {
+    const recent = await client.authToken.findFirst({
+      where: { userId, purpose, createdAt: { gt: new Date(Date.now() - windowMs) } },
+      select: { id: true },
+    });
+    return recent !== null;
   }
 
   async consume(

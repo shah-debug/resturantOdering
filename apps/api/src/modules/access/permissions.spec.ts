@@ -47,6 +47,25 @@ describe('permissionsFor', () => {
     );
   });
 
+  it('keeps branch managers out of organization-wide settings, but not owners', () => {
+    const branchManager = permissionsFor(MembershipRole.MANAGER, null, 'branch-1');
+    for (const permission of [
+      Permission.OrganizationUpdate,
+      Permission.MenuManage,
+      Permission.BillingRead,
+      Permission.BillingManage,
+    ]) {
+      expect(branchManager.has(permission)).toBe(false);
+    }
+    expect(branchManager.has(Permission.MenuRead)).toBe(true);
+    expect(branchManager.has(Permission.OrdersManage)).toBe(true);
+    expect(branchManager.has(Permission.MembersManage)).toBe(true);
+    expect(permissionsFor(MembershipRole.OWNER, null, 'branch-1').has(Permission.MenuManage)).toBe(
+      true,
+    );
+    expect(permissionsFor(MembershipRole.MANAGER, null).has(Permission.MenuManage)).toBe(true);
+  });
+
   it('grants nothing without a role', () => {
     expect(permissionsFor(null, null).size).toBe(0);
   });

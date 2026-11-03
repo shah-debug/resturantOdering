@@ -31,7 +31,8 @@ One mechanism: **server-side sessions in an HttpOnly cookie**. There are no JWTs
 
 ### Sign-in protection
 
-- `AUTH_LOCKOUT_THRESHOLD` consecutive wrong passwords lock the account for `AUTH_LOCKOUT_MINUTES` (`423 ACCOUNT_LOCKED`).
+- `AUTH_LOCKOUT_THRESHOLD` consecutive wrong passwords lock the account for `AUTH_LOCKOUT_MINUTES`. Wrong passwords are counted atomically, so simultaneous attempts cannot skip the lock. While an account is locked, sign-in returns the same `401 INVALID_CREDENTIALS` as an unknown email, after the same hashing work, so the lock does not reveal that the account exists. The owner gets a "Sign-in paused" email when the lock starts.
+- Password-reset and verification emails are sent at most once every 2 minutes per account. Extra requests still answer `202`.
 - Sensitive endpoints (signup, login, verification, password reset/change, invitation acceptance) are limited to `AUTH_RATE_LIMIT_MAX_REQUESTS` per `AUTH_RATE_LIMIT_WINDOW_SECONDS` per client IP and endpoint, on top of the global limit (`429 RATE_LIMITED`).
 - Signup, resend-verification and forgot-password always answer `202` with the same message, whether or not the email exists.
 

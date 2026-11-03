@@ -13,6 +13,7 @@ import {
 import type { CheckoutQuote, OrderTracking, PlacedOrder } from '@app/contracts';
 import type { Response } from 'express';
 import { Public, SensitiveRateLimit } from '../auth/http/decorators.js';
+import { PromoRateLimit } from '../storefront/storefront-rate-limit.js';
 import { StorefrontRateLimit } from '../storefront/storefront-rate-limit.js';
 import { CheckoutService } from './checkout.service.js';
 
@@ -22,6 +23,7 @@ export class CheckoutController {
   constructor(private readonly checkout: CheckoutService) {}
 
   @Post('checkout/quote')
+  @PromoRateLimit()
   @HttpCode(HttpStatus.OK)
   @Header('Cache-Control', 'no-store')
   quote(@Param('slug') slug: string, @Body() body: unknown): Promise<CheckoutQuote> {
@@ -30,6 +32,7 @@ export class CheckoutController {
 
   @Post('orders')
   @SensitiveRateLimit()
+  @PromoRateLimit()
   @Header('Cache-Control', 'no-store')
   async placeOrder(
     @Param('slug') slug: string,
