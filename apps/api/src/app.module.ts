@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
+import { ObservabilityModule } from './common/observability/observability.module.js';
 import { createValidationPipe } from './common/pipes/validation.pipe.js';
 import { AppConfig } from './config/app-config.js';
 import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { BillingModule } from './modules/billing/billing.module.js';
 import { CsrfGuard } from './modules/auth/guards/csrf.guard.js';
 import { SessionAuthGuard } from './modules/auth/guards/session-auth.guard.js';
 import { SENSITIVE_RATE_LIMIT_KEY } from './modules/auth/http/decorators.js';
@@ -29,6 +31,7 @@ import { StorefrontModule } from './modules/storefront/storefront.module.js';
 @Module({
   imports: [
     ConfigModule,
+    ObservabilityModule,
     DatabaseModule,
     ThrottlerModule.forRootAsync({
       inject: [AppConfig],
@@ -74,6 +77,7 @@ import { StorefrontModule } from './modules/storefront/storefront.module.js';
     NotificationsModule,
     ReportsModule,
     PlatformModule,
+    BillingModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

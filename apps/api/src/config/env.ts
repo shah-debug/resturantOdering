@@ -29,6 +29,11 @@ export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().min(1).max(65535).default(4000),
+    LOG_FORMAT: z.enum(['json', 'pretty']).optional(),
+    LOG_REQUESTS: z
+      .enum(['true', 'false'])
+      .transform((value) => value === 'true')
+      .optional(),
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1),
     RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
     RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
@@ -58,6 +63,13 @@ export const envSchema = z
     SMTP_USER: z.string().min(1).optional(),
     SMTP_PASSWORD: z.string().min(1).optional(),
     ORDER_TRACKING_SECRET: z.string().min(32).optional(),
+    BILLING_LIFECYCLE_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86_400).default(900),
+    BILLING_EXPIRE_AFTER_DAYS: z.coerce.number().int().min(1).max(365).default(60),
+    BILLING_PAYMENT_INSTRUCTIONS: z.string().trim().max(2000).optional(),
+    STORAGE_PRIVATE_BUCKET: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9-]{1,61}$/)
+      .default('billing-evidence'),
     NOTIFICATION_DISPATCH_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(15),
     STORAGE_DRIVER: z.enum(['local', 'supabase']).default('local'),
     STORAGE_LOCAL_DIR: z.string().min(1).default('uploads'),

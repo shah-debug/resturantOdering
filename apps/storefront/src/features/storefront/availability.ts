@@ -44,7 +44,7 @@ export function takesOnlineOrders(branch: StorefrontBranch): boolean {
 }
 
 export function getStoreAvailability(storefront: Storefront, now: Date): StoreAvailability {
-  const branches = storefront.branches.filter(takesOnlineOrders);
+  const branches = storefront.onlineOrdering ? storefront.branches.filter(takesOnlineOrders) : [];
   if (branches.length === 0) {
     return {
       state: 'unavailable',

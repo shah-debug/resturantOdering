@@ -11,6 +11,7 @@ import { assertValid } from '../../common/validation/schema.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { AuditAction, AuditService } from '../audit/audit.service.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import type { AuthContext, OrganizationAccess, RequestMeta } from '../auth/http/request-context.js';
 
 const riderSelect = {
@@ -65,6 +66,7 @@ export class RidersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   private scope(access: OrganizationAccess): Prisma.RiderWhereInput {
@@ -141,6 +143,7 @@ export class RidersService {
     meta: RequestMeta,
   ): Promise<Rider> {
     const dto = assertValid(riderUpsertRequestSchema, body);
+    await this.entitlements.assertCanAdd(access.organizationId, 'riders');
     await this.assertBranch(access, dto.branchId);
     await this.assertPhoneFree(access.organizationId, dto.phone, null);
     const row = await this.prisma.$transaction(async (tx) => {
@@ -229,6 +232,9 @@ export class RidersService {
   ): Promise<Rider> {
     const current = await this.findScoped(access, riderId);
     const dto = assertValid(riderPatchRequestSchema, body);
+    if (dto.status === 'ACTIVE' && current.status !== 'ACTIVE') {
+      await this.entitlements.assertCanAdd(access.organizationId, 'riders');
+    }
     if (current._count.orders > 0 && (dto.status === 'INACTIVE' || dto.availability)) {
       throw new AppException(
         HttpStatus.CONFLICT,

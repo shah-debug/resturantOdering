@@ -20,6 +20,9 @@ export const dashboardApi = baseApi.enhanceEndpoints({
     'PlatformOrganization',
     'Plan',
     'PlatformOverview',
+    'Billing',
+    'SubscriptionState',
+    'PlatformPayment',
   ],
 });
 

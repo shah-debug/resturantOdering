@@ -16,6 +16,9 @@ import { apiOrigin, revalidateSeconds } from './env';
 
 export class StorefrontApiError extends Error {}
 
+const API_TIMEOUT_MS = 10_000;
+const FORWARDED_FOR_PATTERN = /^[0-9A-Fa-f.:, ]{1,512}$/;
+
 export function storefrontCacheTag(slug: string): string {
   return `storefront:${slug}`;
 }
@@ -24,6 +27,7 @@ async function getJson(path: string, tags: string[]): Promise<unknown> {
   const response = await fetch(`${apiOrigin()}/${API_PREFIX}/storefront/restaurants${path}`, {
     headers: { Accept: 'application/json' },
     next: { revalidate: revalidateSeconds(), tags },
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
   });
   if (response.status === 404) {
     return null;
@@ -51,6 +55,7 @@ export async function getOrderTracking(
   slug: string,
   orderId: string,
   token: string,
+  forwardedFor: string | null = null,
 ): Promise<OrderTracking | null> {
   if (
     !isStorefrontSlug(slug) ||
@@ -61,7 +66,17 @@ export async function getOrderTracking(
   }
   const response = await fetch(
     `${apiOrigin()}/${API_PREFIX}/storefront/restaurants/${slug}/orders/${orderId}`,
-    { headers: { Accept: 'application/json', [ORDER_TOKEN_HEADER]: token }, cache: 'no-store' },
+    {
+      headers: {
+        Accept: 'application/json',
+        [ORDER_TOKEN_HEADER]: token,
+        ...(forwardedFor && FORWARDED_FOR_PATTERN.test(forwardedFor)
+          ? { 'X-Forwarded-For': forwardedFor }
+          : {}),
+      },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    },
   );
   if (response.status === 404) {
     return null;

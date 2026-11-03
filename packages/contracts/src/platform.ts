@@ -7,6 +7,7 @@ export const SUBSCRIPTION_STATUSES = [
   'TRIALING',
   'ACTIVE',
   'PAST_DUE',
+  'SUSPENDED',
   'CANCELED',
   'EXPIRED',
 ] as const;
@@ -36,7 +37,11 @@ export const subscriptionSummarySchema = z.object({
   currentPeriodStart: z.iso.datetime(),
   currentPeriodEnd: z.iso.datetime(),
   trialEndsAt: z.iso.datetime().nullable(),
+  graceEndsAt: z.iso.datetime().nullable(),
+  suspendedAt: z.iso.datetime().nullable(),
+  cancelAtPeriodEnd: z.boolean(),
   canceledAt: z.iso.datetime().nullable(),
+  expiredAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
 });
 export type SubscriptionSummary = z.infer<typeof subscriptionSummarySchema>;
@@ -117,6 +122,7 @@ export const subscriptionAssignmentSchema = z
   .object({
     planId: z.uuid(),
     status: z.enum(['TRIALING', 'ACTIVE']),
+    trialDays: z.number().int().min(1).max(90).optional(),
     reason: reasonSchema,
   })
   .strict();
@@ -133,8 +139,11 @@ export const planSchema = z.object({
   maxBranches: z.number().int().nullable(),
   maxProducts: z.number().int().nullable(),
   maxRiders: z.number().int().nullable(),
+  maxMembers: z.number().int().nullable(),
   trialDays: z.number().int(),
+  graceDays: z.number().int(),
   isActive: z.boolean(),
+  isDefault: z.boolean(),
   activeSubscriptions: z.number().int(),
 });
 export type Plan = z.infer<typeof planSchema>;
@@ -159,10 +168,34 @@ export const createPlanRequestSchema = z
     maxBranches: limitSchema,
     maxProducts: limitSchema,
     maxRiders: limitSchema,
+    maxMembers: limitSchema,
     trialDays: z.number().int().min(0).max(90),
+    graceDays: z.number().int().min(0).max(60).default(7),
   })
   .strict();
 export type CreatePlanRequest = z.input<typeof createPlanRequestSchema>;
+
+export const updatePlanRequestSchema = z
+  .object({
+    name: z.string().trim().min(2).max(80).optional(),
+    description: z.string().trim().max(500).nullable().optional(),
+    priceMinor: z.number().int().min(0).max(100_000_000).optional(),
+    maxBranches: limitSchema,
+    maxProducts: limitSchema,
+    maxRiders: limitSchema,
+    maxMembers: limitSchema,
+    trialDays: z.number().int().min(0).max(90).optional(),
+    graceDays: z.number().int().min(0).max(60).optional(),
+    isActive: z.boolean().optional(),
+    isDefault: z.boolean().optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, 'Provide at least one field to update')
+  .refine((value) => !(value.isDefault === true && value.isActive === false), {
+    message: 'The default plan must be active',
+    path: ['isDefault'],
+  });
+export type UpdatePlanRequest = z.input<typeof updatePlanRequestSchema>;
 
 export const subscriptionOverviewSchema = z.object({
   byStatus: z.record(subscriptionStatusSchema, z.number().int()),

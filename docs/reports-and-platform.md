@@ -53,7 +53,7 @@ Cancelled and rejected orders never contribute money. Ingredient, labour, rent, 
 | Restaurant CSV export                                                                |                     |      ✓      | `GET /platform/organizations/export.csv`       |
 
 - **Status changes** send the status the admin saw (`expectedStatus`) and are applied conditionally, so two admins can't overwrite each other. Suspending blocks staff access (`403`) and takes the storefront offline (`404`); reactivating restores both. **Closed restaurants cannot be reopened.**
-- **Subscriptions:** assigning a plan cancels the current subscription and creates a new one with the plan's price as it is today (the database allows one current subscription per restaurant). No payment is taken; billing is manual.
+- **Subscriptions:** assigning a plan cancels the current subscription, voids its open invoices and creates a new one with the plan's price as it is today (the database allows one current subscription per restaurant). A trial starts at local midnight in the restaurant's timezone and its first invoice is due when it ends; "Active" grants the first period without an invoice. Lifecycle, invoices and payment review are described in [billing.md](billing.md).
 - **Subscription overview** counts by status and plan, trials ending within 7 days, restaurants with no current plan, past-due accounts, and the _monthly list price of active plans_ (yearly ÷ 12). That last figure is plan prices, not collected revenue.
 - **Health** reports database latency, API uptime, orders in the last hour, new orders waiting over 15 minutes, the notification queue (pending, failed in 24 h, oldest pending), live dashboard connections on this API instance, and restaurants by status.
 

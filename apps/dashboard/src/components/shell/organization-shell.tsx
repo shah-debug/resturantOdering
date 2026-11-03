@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bike,
   ChefHat,
+  CreditCard,
   LayoutDashboard,
   ListChecks,
   ReceiptText,
@@ -20,11 +21,13 @@ import {
   LoadingState,
   UnavailableState,
 } from '@/components/states';
+import { BillingBanner } from '@/features/billing';
 import { useGetOrganizationQuery } from '@/features/organizations/organizations-api';
 import { LiveOrdersBanner, LiveOrdersProvider, LiveStatusIndicator } from '@/features/orders';
 import {
   canManageRestaurant,
   canManageTeam,
+  canReadBilling,
   canReadMenu,
   canReadOrders,
   canReadReports,
@@ -46,6 +49,7 @@ const SECTION_LABELS: Record<string, string> = {
   kitchen: 'Kitchen',
   riders: 'Riders',
   reports: 'Reports',
+  billing: 'Billing',
   menu: 'Menu',
   members: 'Team',
   settings: 'Settings',
@@ -111,6 +115,9 @@ export function OrganizationShell({
       : []),
     ...(canManageTeam(membership?.role)
       ? [{ href: `${base}/members`, label: 'Team', icon: Users }]
+      : []),
+    ...(canReadBilling(membership?.role)
+      ? [{ href: `${base}/billing`, label: 'Billing', icon: CreditCard }]
       : []),
     ...(canManageRestaurant(membership?.role)
       ? [{ href: `${base}/settings`, label: 'Settings', icon: Settings }]
@@ -189,7 +196,11 @@ export function OrganizationShell({
             className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 focus:outline-none sm:px-6 sm:py-8 lg:px-8"
           >
             {showNav ? (
-              <div className="mb-6 empty:hidden">
+              <div className="mb-6 grid gap-3 empty:hidden">
+                <BillingBanner
+                  organizationId={organizationId}
+                  canSeeBilling={canReadBilling(membership?.role)}
+                />
                 <LiveOrdersBanner organizationId={organizationId} />
               </div>
             ) : null}

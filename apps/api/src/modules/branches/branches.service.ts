@@ -4,6 +4,7 @@ import { AppException, ValidationFailedException } from '../../common/errors/app
 import { PrismaService } from '../../database/prisma.service.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { AuditAction, AuditService } from '../audit/audit.service.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import type { AuthContext, RequestMeta } from '../auth/http/request-context.js';
 import {
   branchSelect,
@@ -33,6 +34,7 @@ export class BranchesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   async list(organizationId: string): Promise<Branch[]> {
@@ -56,6 +58,7 @@ export class BranchesService {
   }
 
   async create(actor: BranchActor, dto: CreateBranchDto): Promise<Branch> {
+    await this.entitlements.assertCanAdd(actor.organizationId, 'branches');
     const base = slugifyBranchName(dto.name);
     const taken = new Set(
       (

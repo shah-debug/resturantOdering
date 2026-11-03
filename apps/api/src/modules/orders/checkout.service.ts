@@ -18,6 +18,7 @@ import { AppConfig } from '../../config/app-config.js';
 import { isUniqueViolation } from '../../database/prisma-errors.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import { enqueueOrderPlacedEmail } from '../notifications/notification-outbox.js';
 import { publishedOrganization } from '../storefront/storefront-menu.js';
 import {
@@ -131,6 +132,7 @@ export class CheckoutService {
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
     private readonly events: OrderEventsService,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   private async publishedRestaurant(
@@ -159,6 +161,7 @@ export class CheckoutService {
     const evaluation = await evaluateCheckout(this.prisma, organization, input, {
       now,
       lock: false,
+      acceptingOrders: await this.entitlements.canTakeOrders(organization.id),
     });
     return evaluation.quote;
   }
@@ -193,6 +196,7 @@ export class CheckoutService {
           const evaluation = await evaluateCheckout(tx, organization, input, {
             now,
             lock: true,
+            acceptingOrders: await this.entitlements.canTakeOrders(organization.id, tx),
             customerPhone: input.customer.phone,
           });
           const { pricing, branch } = evaluation;

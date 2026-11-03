@@ -24,10 +24,11 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { PlatformRole } from '../../generated/prisma/enums.js';
 import { AuditAction, AuditService } from '../audit/audit.service.js';
 import type { AuthContext, RequestMeta } from '../auth/http/request-context.js';
+import { startSubscription } from '../billing/subscription-factory.js';
 import { OrderEventsService } from '../orders/order-events.service.js';
 
 const DAY_MS = 86_400_000;
-const CURRENT_SUBSCRIPTION = ['TRIALING', 'ACTIVE', 'PAST_DUE'] as const;
+const CURRENT_SUBSCRIPTION = ['TRIALING', 'ACTIVE', 'PAST_DUE', 'SUSPENDED'] as const;
 const EXPORT_LIMIT = 10_000;
 
 const subscriptionSelect = {
@@ -40,7 +41,11 @@ const subscriptionSelect = {
   currentPeriodStart: true,
   currentPeriodEnd: true,
   trialEndsAt: true,
+  graceEndsAt: true,
+  suspendedAt: true,
+  cancelAtPeriodEnd: true,
   canceledAt: true,
+  expiredAt: true,
   createdAt: true,
   plan: { select: { code: true, name: true } },
 } satisfies Prisma.SubscriptionSelect;
@@ -60,7 +65,11 @@ function toSubscription(row: SubscriptionRow): SubscriptionSummary {
     currentPeriodStart: row.currentPeriodStart.toISOString(),
     currentPeriodEnd: row.currentPeriodEnd.toISOString(),
     trialEndsAt: row.trialEndsAt?.toISOString() ?? null,
+    graceEndsAt: row.graceEndsAt?.toISOString() ?? null,
+    suspendedAt: row.suspendedAt?.toISOString() ?? null,
+    cancelAtPeriodEnd: row.cancelAtPeriodEnd,
     canceledAt: row.canceledAt?.toISOString() ?? null,
+    expiredAt: row.expiredAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -82,19 +91,6 @@ type AuditRow = Prisma.AuditLogGetPayload<{ select: typeof auditSelect }>;
 
 function notFound(): AppException {
   return new AppException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Restaurant not found');
-}
-
-function addInterval(start: Date, interval: 'MONTHLY' | 'YEARLY', trialDays: number | null): Date {
-  if (trialDays !== null) {
-    return new Date(start.getTime() + trialDays * DAY_MS);
-  }
-  const end = new Date(start);
-  if (interval === 'MONTHLY') {
-    end.setUTCMonth(end.getUTCMonth() + 1);
-  } else {
-    end.setUTCFullYear(end.getUTCFullYear() + 1);
-  }
-  return end;
 }
 
 @Injectable()
@@ -362,7 +358,10 @@ export class PlatformService {
       throw notFound();
     }
     const [organization, plan] = await Promise.all([
-      this.prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true } }),
+      this.prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { id: true, timezone: true },
+      }),
       this.prisma.plan.findUnique({ where: { id: dto.planId } }),
     ]);
     if (!organization) {
@@ -377,8 +376,20 @@ export class PlatformService {
       );
     }
     const now = new Date();
-    const trialDays = dto.status === 'TRIALING' ? Math.max(plan.trialDays, 1) : null;
-    const periodEnd = addInterval(now, plan.billingInterval, trialDays);
+    const trialDays = dto.trialDays ?? plan.trialDays;
+    if (dto.status === 'TRIALING' && trialDays < 1) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        'VALIDATION_FAILED',
+        'Request validation failed',
+        [
+          {
+            field: 'trialDays',
+            message: 'This plan has no trial. Enter the number of trial days.',
+          },
+        ],
+      );
+    }
 
     await this.prisma.$transaction(async (tx) => {
       const previous = await tx.subscription.findMany({
@@ -387,21 +398,19 @@ export class PlatformService {
       });
       await tx.subscription.updateMany({
         where: { organizationId, status: { in: [...CURRENT_SUBSCRIPTION] } },
-        data: { status: 'CANCELED', canceledAt: now },
+        data: { status: 'CANCELED', canceledAt: now, statusChangedAt: now },
       });
-      const created = await tx.subscription.create({
-        data: {
-          organizationId,
-          planId: plan.id,
-          status: dto.status,
-          priceMinor: plan.priceMinor,
-          currency: plan.currency,
-          billingInterval: plan.billingInterval,
-          currentPeriodStart: now,
-          currentPeriodEnd: periodEnd,
-          trialEndsAt: dto.status === 'TRIALING' ? periodEnd : null,
-        },
-        select: { id: true },
+      await tx.subscriptionInvoice.updateMany({
+        where: { organizationId, status: 'OPEN' },
+        data: { status: 'VOID', voidedAt: now },
+      });
+      const created = await startSubscription(tx, {
+        organizationId,
+        timezone: organization.timezone,
+        plan,
+        status: dto.status,
+        trialDays,
+        now,
       });
       await this.audit.record(
         {
@@ -414,6 +423,7 @@ export class PlatformService {
             plan: plan.code,
             status: dto.status,
             priceMinor: plan.priceMinor,
+            ...(dto.status === 'TRIALING' ? { trialDays } : { firstPeriod: 'granted_by_admin' }),
             replaced: previous.map((entry) => ({
               id: entry.id,
               plan: entry.plan.code,
@@ -449,8 +459,11 @@ export class PlatformService {
       maxBranches: row.maxBranches,
       maxProducts: row.maxProducts,
       maxRiders: row.maxRiders,
+      maxMembers: row.maxMembers,
       trialDays: row.trialDays,
+      graceDays: row.graceDays,
       isActive: row.isActive,
+      isDefault: row.isDefault,
       activeSubscriptions: row._count.subscriptions,
     }));
   }
@@ -480,7 +493,9 @@ export class PlatformService {
           maxBranches: dto.maxBranches ?? null,
           maxProducts: dto.maxProducts ?? null,
           maxRiders: dto.maxRiders ?? null,
+          maxMembers: dto.maxMembers ?? null,
           trialDays: dto.trialDays,
+          graceDays: dto.graceDays,
         },
       });
       await this.audit.record(
@@ -573,6 +588,7 @@ export class PlatformService {
         TRIALING: counts.get('TRIALING') ?? 0,
         ACTIVE: counts.get('ACTIVE') ?? 0,
         PAST_DUE: counts.get('PAST_DUE') ?? 0,
+        SUSPENDED: counts.get('SUSPENDED') ?? 0,
         CANCELED: counts.get('CANCELED') ?? 0,
         EXPIRED: counts.get('EXPIRED') ?? 0,
       },

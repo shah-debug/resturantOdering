@@ -114,23 +114,23 @@ Recorded in `audit_logs` (append-only) with actor, organization, entity, client 
 
 ## Environment variables
 
-| Variable                         | Default                                       | Notes                                                                          |
-| -------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------ |
-| `APP_ORIGINS`                    | `http://localhost:3000,http://localhost:3001` | Exact origins for the CSRF check; must be `https://` in production             |
-| `DASHBOARD_URL`                  | `http://localhost:3000`                       | Base for links in emails                                                       |
-| `SESSION_TTL_HOURS`              | `168`                                         | Absolute session lifetime                                                      |
-| `SESSION_IDLE_TIMEOUT_HOURS`     | `24`                                          | Must not exceed the TTL                                                        |
-| `AUTH_LOCKOUT_THRESHOLD`         | `10`                                          | Failed logins before lockout                                                   |
-| `AUTH_LOCKOUT_MINUTES`           | `15`                                          | Lockout duration                                                               |
-| `AUTH_RATE_LIMIT_WINDOW_SECONDS` | `60`                                          | Sensitive endpoint window                                                      |
-| `AUTH_RATE_LIMIT_MAX_REQUESTS`   | `10`                                          | Per IP, per endpoint, per window                                               |
-| `MAIL_TRANSPORT`                 | `log`                                         | `log` (development only; prints links) or `smtp` (nodemailer)                  |
-| `MAIL_FROM`                      | `Restaurant Platform <no-reply@localhost>`    | An address the SMTP account may send from                                      |
-| `SMTP_HOST`                      | —                                             | Required when `MAIL_TRANSPORT=smtp`                                            |
-| `SMTP_PORT`                      | `587`                                         | 587 for STARTTLS, 465 for implicit TLS                                         |
-| `SMTP_SECURE`                    | `true` on port 465, otherwise `false`         | Implicit TLS; STARTTLS is required in production when this is `false`          |
-| `SMTP_USER` / `SMTP_PASSWORD`    | —                                             | Set both or neither                                                            |
-| `TRUST_PROXY_HOPS`               | `1`                                           | Proxies in front of the API; used for client IPs in rate limits and audit logs |
+| Variable                         | Default                                       | Notes                                                                                                                 |
+| -------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `APP_ORIGINS`                    | `http://localhost:3000,http://localhost:3001` | Exact origins for the CSRF check; must be `https://` in production                                                    |
+| `DASHBOARD_URL`                  | `http://localhost:3000`                       | Base for links in emails                                                                                              |
+| `SESSION_TTL_HOURS`              | `168`                                         | Absolute session lifetime                                                                                             |
+| `SESSION_IDLE_TIMEOUT_HOURS`     | `24`                                          | Must not exceed the TTL                                                                                               |
+| `AUTH_LOCKOUT_THRESHOLD`         | `10`                                          | Failed logins before lockout                                                                                          |
+| `AUTH_LOCKOUT_MINUTES`           | `15`                                          | Lockout duration                                                                                                      |
+| `AUTH_RATE_LIMIT_WINDOW_SECONDS` | `60`                                          | Sensitive endpoint window                                                                                             |
+| `AUTH_RATE_LIMIT_MAX_REQUESTS`   | `10`                                          | Per IP, per endpoint, per window                                                                                      |
+| `MAIL_TRANSPORT`                 | `log`                                         | `log` (development only; prints links) or `smtp` (nodemailer)                                                         |
+| `MAIL_FROM`                      | `Restaurant Platform <no-reply@localhost>`    | An address the SMTP account may send from                                                                             |
+| `SMTP_HOST`                      | —                                             | Required when `MAIL_TRANSPORT=smtp`                                                                                   |
+| `SMTP_PORT`                      | `587`                                         | 587 for STARTTLS, 465 for implicit TLS                                                                                |
+| `SMTP_SECURE`                    | `true` on port 465, otherwise `false`         | Implicit TLS; STARTTLS is required in production when this is `false`                                                 |
+| `SMTP_USER` / `SMTP_PASSWORD`    | —                                             | Set both or neither                                                                                                   |
+| `TRUST_PROXY_HOPS`               | `1`                                           | Proxies in front of the Next.js apps that append `X-Forwarded-For`; used for client IPs in rate limits and audit logs |
 
 The API refuses to start in production with the `log` mail transport, non-https origins, or no database CA certificate.
 
@@ -167,7 +167,7 @@ Platform roles take effect on the person's next request.
 ### Deployment
 
 - Serve the dashboard and storefront over HTTPS so the `__Host-` cookie is accepted.
-- Keep the API reachable only through the Next.js apps (or a trusted load balancer) and set `TRUST_PROXY_HOPS` to the number of proxies in front of it.
+- Keep the API reachable only through the Next.js apps, and put an edge proxy or load balancer in front of the apps that appends the visitor's address to `X-Forwarded-For`. Set `TRUST_PROXY_HOPS` to the number of such proxies. The Next.js rewrite does not count as a hop, because it does not append anything. See [operations.md](operations.md#client-ip-addresses).
 
 ## Tests
 

@@ -17,6 +17,7 @@ import { ProductStatus } from '../../generated/prisma/enums.js';
 import { AuditAction } from '../audit/audit.service.js';
 import { detectImageType } from '../storage/image-type.js';
 import { ObjectStorage } from '../storage/object-storage.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import { assertSameIds } from './categories.service.js';
 import { type MenuActor, MenuAudit } from './menu-audit.js';
 
@@ -106,6 +107,7 @@ export class ProductsService {
     private readonly prisma: PrismaService,
     private readonly audit: MenuAudit,
     private readonly storage: ObjectStorage,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   async list(
@@ -156,6 +158,7 @@ export class ProductsService {
         { field: 'variants', message: 'New products cannot reference existing options' },
       ]);
     }
+    await this.entitlements.assertCanAdd(actor.organizationId, 'products');
     await this.assertReferences(actor.organizationId, dto);
     await this.assertSkusFree(actor.organizationId, dto, []);
 

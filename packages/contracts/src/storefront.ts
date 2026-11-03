@@ -101,6 +101,7 @@ export const storefrontSchema = z.object({
   timezone: z.string(),
   branches: z.array(storefrontBranchSchema),
   categories: z.array(storefrontCategorySchema),
+  onlineOrdering: z.boolean(),
 });
 export type Storefront = z.infer<typeof storefrontSchema>;
 

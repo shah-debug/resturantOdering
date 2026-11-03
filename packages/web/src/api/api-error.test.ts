@@ -2,6 +2,7 @@ import {
   getErrorMessage,
   getFieldErrors,
   NETWORK_ERROR_MESSAGE,
+  TIMEOUT_ERROR_MESSAGE,
   toApiError,
   UNKNOWN_ERROR_MESSAGE,
 } from './api-error';
@@ -43,6 +44,12 @@ describe('api-error', () => {
   it('returns a network message for fetch failures', () => {
     expect(getErrorMessage({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' })).toBe(
       NETWORK_ERROR_MESSAGE,
+    );
+  });
+
+  it('tells the user when the server took too long', () => {
+    expect(getErrorMessage({ status: 'TIMEOUT_ERROR', error: 'AbortError: timed out' })).toBe(
+      TIMEOUT_ERROR_MESSAGE,
     );
   });
 

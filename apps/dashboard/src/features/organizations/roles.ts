@@ -84,3 +84,7 @@ export function canReadRiders(role: MembershipRole | undefined): boolean {
 export function canReadReports(role: MembershipRole | undefined): boolean {
   return canManageRestaurant(role);
 }
+
+export function canReadBilling(role: MembershipRole | undefined): boolean {
+  return canManageRestaurant(role);
+}

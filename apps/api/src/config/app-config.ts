@@ -32,6 +32,7 @@ export interface StorageConfig {
   driver: Env['STORAGE_DRIVER'];
   localDirectory: string;
   bucket: string;
+  privateBucket: string;
   supabaseUrl: string | undefined;
   supabaseServiceRoleKey: string | undefined;
 }
@@ -48,6 +49,26 @@ export class AppConfig {
   private readonly fallbackTrackingSecret = randomBytes(32).toString('base64url');
 
   constructor(private readonly env: Env) {}
+
+  get billing(): {
+    lifecycleIntervalSeconds: number;
+    expireAfterDays: number;
+    paymentInstructions: string | null;
+  } {
+    return {
+      lifecycleIntervalSeconds:
+        this.env.NODE_ENV === 'test' ? 0 : this.env.BILLING_LIFECYCLE_INTERVAL_SECONDS,
+      expireAfterDays: this.env.BILLING_EXPIRE_AFTER_DAYS,
+      paymentInstructions: this.env.BILLING_PAYMENT_INSTRUCTIONS ?? null,
+    };
+  }
+
+  get logging(): { json: boolean; requests: boolean } {
+    return {
+      json: (this.env.LOG_FORMAT ?? (this.isProduction ? 'json' : 'pretty')) === 'json',
+      requests: this.env.LOG_REQUESTS ?? this.env.NODE_ENV !== 'test',
+    };
+  }
 
   get notificationDispatchIntervalSeconds(): number {
     return this.env.NODE_ENV === 'test' ? 0 : this.env.NOTIFICATION_DISPATCH_INTERVAL_SECONDS;
@@ -118,6 +139,7 @@ export class AppConfig {
       driver: this.env.STORAGE_DRIVER,
       localDirectory: this.env.STORAGE_LOCAL_DIR,
       bucket: this.env.STORAGE_BUCKET,
+      privateBucket: this.env.STORAGE_PRIVATE_BUCKET,
       supabaseUrl: this.env.SUPABASE_URL?.replace(/\/$/, ''),
       supabaseServiceRoleKey: this.env.SUPABASE_SERVICE_ROLE_KEY,
     };

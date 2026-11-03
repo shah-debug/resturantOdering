@@ -5,6 +5,8 @@ import { apiErrorResponseSchema, type ApiErrorResponse } from '@app/contracts';
 export const NETWORK_ERROR_MESSAGE =
   'Unable to reach the server. Check your connection and try again.';
 export const UNKNOWN_ERROR_MESSAGE = 'Something went wrong. Please try again.';
+export const TIMEOUT_ERROR_MESSAGE =
+  'The server is taking too long to respond. Check your connection and try again.';
 
 export function toApiError(
   error: FetchBaseQueryError | SerializedError | undefined,
@@ -34,6 +36,9 @@ export function getErrorMessage(error: FetchBaseQueryError | SerializedError | u
   }
   if (error && 'status' in error && error.status === 'FETCH_ERROR') {
     return NETWORK_ERROR_MESSAGE;
+  }
+  if (error && 'status' in error && error.status === 'TIMEOUT_ERROR') {
+    return TIMEOUT_ERROR_MESSAGE;
   }
   return UNKNOWN_ERROR_MESSAGE;
 }

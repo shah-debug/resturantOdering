@@ -15,6 +15,8 @@ export const Permission = {
   RidersRead: 'riders:read',
   RidersManage: 'riders:manage',
   ReportsRead: 'reports:read',
+  BillingRead: 'billing:read',
+  BillingManage: 'billing:manage',
   DeliveriesReadAssigned: 'deliveries:read-assigned',
   DeliveriesUpdateAssigned: 'deliveries:update-assigned',
   AuditRead: 'audit:read',
@@ -26,7 +28,9 @@ const ALL_PERMISSIONS: readonly Permission[] = Object.values(Permission);
 
 export const ROLE_PERMISSIONS: Readonly<Record<MembershipRole, readonly Permission[]>> = {
   [MembershipRole.OWNER]: ALL_PERMISSIONS,
-  [MembershipRole.MANAGER]: ALL_PERMISSIONS,
+  [MembershipRole.MANAGER]: ALL_PERMISSIONS.filter(
+    (permission) => permission !== Permission.BillingManage,
+  ),
   [MembershipRole.ORDER_STAFF]: [
     Permission.OrganizationRead,
     Permission.BranchesRead,
@@ -59,6 +63,7 @@ export const PLATFORM_ROLE_PERMISSIONS: Readonly<Record<PlatformRole, readonly P
     Permission.OrdersRead,
     Permission.RidersRead,
     Permission.ReportsRead,
+    Permission.BillingRead,
     Permission.AuditRead,
   ],
 };

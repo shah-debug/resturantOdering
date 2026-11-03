@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   Field,
+  Input,
   Select,
   Textarea,
 } from '@app/web/ui';
@@ -26,6 +27,7 @@ import {
   useListPlansQuery,
 } from '../platform-api';
 import { AuditList } from './audit-list';
+import { CancelSubscriptionDialog } from './cancel-subscription-dialog';
 import { usePlatformRole } from './platform-shell';
 import { statusBadge } from './restaurants-page';
 
@@ -123,7 +125,8 @@ function PlanDialog({
   const [assign, state] = useAssignSubscriptionMutation();
   const active = (plans.data ?? []).filter((plan) => plan.isActive);
   const [planId, setPlanId] = useState(restaurant.subscription?.planId ?? '');
-  const [status, setStatus] = useState<'ACTIVE' | 'TRIALING'>('ACTIVE');
+  const [status, setStatus] = useState<'ACTIVE' | 'TRIALING'>('TRIALING');
+  const [trialDays, setTrialDays] = useState('');
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const chosen = planId || active[0]?.id || '';
@@ -138,10 +141,20 @@ function PlanDialog({
       setError('Give a reason of at least 5 characters. It is saved in the audit log.');
       return;
     }
+    const days = trialDays.trim() === '' ? undefined : Number(trialDays);
+    if (days !== undefined && (!Number.isInteger(days) || days < 1 || days > 90)) {
+      setError('Trial length must be between 1 and 90 days.');
+      return;
+    }
     try {
       await assign({
         organizationId: restaurant.id,
-        body: { planId: chosen, status, reason: reason.trim() },
+        body: {
+          planId: chosen,
+          status,
+          ...(status === 'TRIALING' && days !== undefined ? { trialDays: days } : {}),
+          reason: reason.trim(),
+        },
       }).unwrap();
       onClose();
     } catch (caught) {
@@ -156,7 +169,9 @@ function PlanDialog({
           <DialogHeader>
             <DialogTitle>Change plan</DialogTitle>
             <DialogDescription>
-              The current subscription is cancelled and replaced. No payment is taken.
+              The current subscription is cancelled and replaced. A trial creates the first invoice
+              for when it ends. Starting as active grants the first period without payment, so use
+              it only when you have agreed that with the restaurant.
             </DialogDescription>
           </DialogHeader>
           <Field label="Plan">
@@ -182,11 +197,23 @@ function PlanDialog({
                 value={status}
                 onChange={(event) => setStatus(event.target.value as 'ACTIVE' | 'TRIALING')}
               >
-                <option value="ACTIVE">Active</option>
-                <option value="TRIALING">Trial</option>
+                <option value="TRIALING">Free trial</option>
+                <option value="ACTIVE">Active (first period granted)</option>
               </Select>
             )}
           </Field>
+          {status === 'TRIALING' ? (
+            <Field label="Trial length (days)" hint="Leave empty to use the plan's trial length">
+              {(control) => (
+                <Input
+                  {...control}
+                  inputMode="numeric"
+                  value={trialDays}
+                  onChange={(event) => setTrialDays(event.target.value)}
+                />
+              )}
+            </Field>
+          ) : null}
           <Field label="Reason" error={error ?? undefined}>
             {(control) => (
               <Textarea
@@ -217,6 +244,7 @@ export function RestaurantDetailPage({ organizationId }: { organizationId: strin
   const query = useGetPlatformRestaurantQuery(organizationId);
   const [target, setTarget] = useState<Target | null>(null);
   const [changingPlan, setChangingPlan] = useState(false);
+  const [canceling, setCanceling] = useState(false);
 
   if (query.isLoading) {
     return <LoadingState label="Loading restaurant…" />;
@@ -274,6 +302,11 @@ export function RestaurantDetailPage({ organizationId }: { organizationId: strin
           <Button type="button" variant="outline" onClick={() => setChangingPlan(true)}>
             Change plan
           </Button>
+          {restaurant.subscription && !restaurant.subscription.cancelAtPeriodEnd ? (
+            <Button type="button" variant="ghost" onClick={() => setCanceling(true)}>
+              Cancel subscription
+            </Button>
+          ) : null}
         </div>
       ) : !isAdmin ? (
         <Alert title="Read-only">Support staff can view restaurants but not change them.</Alert>
@@ -337,6 +370,13 @@ export function RestaurantDetailPage({ organizationId }: { organizationId: strin
                   <span className="block text-xs text-muted-foreground">
                     {entry.currentPeriodStart.slice(0, 10)} → {entry.currentPeriodEnd.slice(0, 10)}
                     {entry.canceledAt ? ` · cancelled ${entry.canceledAt.slice(0, 10)}` : ''}
+                    {entry.graceEndsAt && entry.status === 'PAST_DUE'
+                      ? ` · grace ends ${entry.graceEndsAt.slice(0, 10)}`
+                      : ''}
+                    {entry.suspendedAt && entry.status === 'SUSPENDED'
+                      ? ` · suspended ${entry.suspendedAt.slice(0, 10)}`
+                      : ''}
+                    {entry.cancelAtPeriodEnd ? ' · ends at period end' : ''}
                   </span>
                 </li>
               ))}
@@ -362,6 +402,14 @@ export function RestaurantDetailPage({ organizationId }: { organizationId: strin
 
       {target ? (
         <StatusDialog restaurant={restaurant} target={target} onClose={() => setTarget(null)} />
+      ) : null}
+      {canceling && restaurant.subscription ? (
+        <CancelSubscriptionDialog
+          organizationId={restaurant.id}
+          restaurantName={restaurant.name}
+          canEndAtPeriodEnd={['TRIALING', 'ACTIVE'].includes(restaurant.subscription.status)}
+          onClose={() => setCanceling(false)}
+        />
       ) : null}
       {changingPlan ? (
         <PlanDialog restaurant={restaurant} onClose={() => setChangingPlan(false)} />

@@ -87,6 +87,7 @@ export function branch(overrides: Partial<StorefrontBranch> = {}): StorefrontBra
 export function storefrontFixture(overrides: Partial<Storefront> = {}): Storefront {
   return {
     slug: 'karahi-house',
+    onlineOrdering: true,
     name: 'Karahi House',
     description: 'Charcoal karahi and BBQ from Lahore.',
     logoUrl: null,

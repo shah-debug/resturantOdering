@@ -38,14 +38,16 @@ model User {
   lockedUntil         DateTime? @map("locked_until") @db.Timestamptz(3)
   lastLoginAt         DateTime? @map("last_login_at") @db.Timestamptz(3)
 
-  memberships        Membership[]         @relation("MembershipUser")
-  invitedMemberships Membership[]         @relation("MembershipInviter")
-  sessions           Session[]
-  authTokens         AuthToken[]
-  riderProfiles      Rider[]
-  orderStatusChanges OrderStatusHistory[]
-  notifications      Notification[]
-  auditLogs          AuditLog[]
+  memberships                   Membership[]          @relation("MembershipUser")
+  invitedMemberships            Membership[]          @relation("MembershipInviter")
+  sessions                      Session[]
+  authTokens                    AuthToken[]
+  riderProfiles                 Rider[]
+  orderStatusChanges            OrderStatusHistory[]
+  notifications                 Notification[]
+  auditLogs                     AuditLog[]
+  submittedSubscriptionPayments SubscriptionPayment[] @relation("SubscriptionPaymentSubmitter")
+  reviewedSubscriptionPayments  SubscriptionPayment[] @relation("SubscriptionPaymentReviewer")
 
   @@map("users")
 }
@@ -61,6 +63,9 @@ model Plan {
   maxBranches     Int?            @map("max_branches")
   maxProducts     Int?            @map("max_products")
   maxRiders       Int?            @map("max_riders")
+  maxMembers      Int?            @map("max_members")
+  graceDays       Int             @default(7) @map("grace_days")
+  isDefault       Boolean         @default(false) @map("is_default")
   trialDays       Int             @default(0) @map("trial_days")
   isActive        Boolean         @default(true) @map("is_active")
   sortOrder       Int             @default(0) @map("sort_order")
@@ -69,5 +74,6 @@ model Plan {
 
   subscriptions Subscription[]
 
+  @@unique([isDefault], where: { isDefault: true }, map: "plans_one_default_key")
   @@map("plans")
 }

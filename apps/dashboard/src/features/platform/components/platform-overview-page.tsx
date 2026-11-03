@@ -121,6 +121,11 @@ export function PlatformOverviewPage() {
               />
               <Tile label="Past due" value={number(overview.data.byStatus.PAST_DUE)} />
               <Tile
+                label="Suspended"
+                value={number(overview.data.byStatus.SUSPENDED)}
+                note="Online ordering paused until payment is verified."
+              />
+              <Tile
                 label="Monthly list price of active plans"
                 value={formatRupees(overview.data.monthlyRecurringListPriceMinor)}
                 note="Plan prices at sign-up, yearly plans divided by 12. Not collected revenue."

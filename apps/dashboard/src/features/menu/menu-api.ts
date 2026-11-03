@@ -17,6 +17,7 @@ import {
   type ProductUpsertRequest,
   type UpdateCategoryRequest,
 } from '@app/contracts';
+import { UPLOAD_TIMEOUT_MS } from '@app/web/api';
 import { dashboardApi } from '@/lib/api';
 
 const categoryListSchema = z.array(categorySchema);
@@ -218,7 +219,12 @@ export const menuApi = dashboardApi.injectEndpoints({
       query: ({ file, ...target }) => {
         const body = new FormData();
         body.append('file', file);
-        return { url: `${productPath(target)}/image`, method: 'POST', body };
+        return {
+          url: `${productPath(target)}/image`,
+          method: 'POST',
+          body,
+          timeout: UPLOAD_TIMEOUT_MS,
+        };
       },
       transformResponse: parseProduct,
       invalidatesTags: (result, _error, { organizationId, productId }) =>

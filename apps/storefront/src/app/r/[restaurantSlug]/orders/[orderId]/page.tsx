@@ -25,13 +25,19 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
   const { restaurantSlug, orderId } = await params;
   const query = await searchParams;
   const token = single(query.token);
-  const order = await getOrderTracking(restaurantSlug, orderId, token);
+  const requestHeaders = await headers();
+  const order = await getOrderTracking(
+    restaurantSlug,
+    orderId,
+    token,
+    requestHeaders.get('x-forwarded-for'),
+  );
   if (!order) {
     notFound();
   }
   const storefront = await getStorefront(restaurantSlug);
   const brand = brandStyles(storefront?.primaryColor ?? null);
-  const nonce = (await headers()).get(NONCE_HEADER) ?? undefined;
+  const nonce = requestHeaders.get(NONCE_HEADER) ?? undefined;
   return (
     <div data-storefront className="min-h-dvh bg-background">
       {brand ? <style nonce={nonce}>{brand}</style> : null}

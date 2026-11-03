@@ -16,6 +16,7 @@ import { AuthTokenService } from '../auth/auth-token.service.js';
 import type { AuthContext, OrganizationAccess, RequestMeta } from '../auth/http/request-context.js';
 import { invitationEmail } from '../mail/auth-emails.js';
 import { Mailer } from '../mail/mailer.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import type { InviteMemberDto, UpdateMemberDto } from './dto/organization.dto.js';
 import { memberSelect, toMember } from './organization.mappers.js';
 
@@ -49,6 +50,7 @@ export class MembershipsService {
     private readonly tokens: AuthTokenService,
     private readonly audit: AuditService,
     private readonly mailer: Mailer,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   async list(organizationId: string, page: number, pageSize: number): Promise<Paginated<Member>> {
@@ -75,6 +77,7 @@ export class MembershipsService {
     if (!canManageRole(access.role, access.platformRole, dto.role)) {
       throw cannotManage();
     }
+    await this.entitlements.assertCanAdd(access.organizationId, 'members');
     const branchId = dto.branchId ?? null;
     await this.assertBranchInOrganization(access.organizationId, branchId);
 

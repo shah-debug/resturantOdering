@@ -8,7 +8,7 @@ import { ErrorState, isUnavailableError, UnavailableState } from '@/components/s
 import { useFallbackPolling } from '../live-orders';
 import { formatAge, minutesSince } from '../order-labels';
 import { useListOrdersQuery } from '../orders-api';
-import { useNow } from './orders-page';
+import { useNow } from '@/lib/use-now';
 import { TransitionControls } from './transition-controls';
 
 const LATE_AFTER_MINUTES = 20;

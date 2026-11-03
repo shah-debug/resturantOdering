@@ -46,6 +46,14 @@ export const AuditAction = {
   PlatformSubscriptionAssigned: 'platform.subscription_assigned',
   PlatformPlanCreated: 'platform.plan_created',
   PlatformOrganizationsExported: 'platform.organizations_exported',
+  PlatformPlanUpdated: 'platform.plan_updated',
+  PlatformSubscriptionCanceled: 'platform.subscription_canceled',
+  PlatformBillingRun: 'platform.billing_run',
+  BillingPaymentSubmitted: 'billing.payment_submitted',
+  BillingPaymentVerified: 'billing.payment_verified',
+  BillingPaymentRejected: 'billing.payment_rejected',
+  BillingSubscriptionStatusChanged: 'billing.subscription_status_changed',
+  BillingTrialStarted: 'billing.trial_started',
 } as const;
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];

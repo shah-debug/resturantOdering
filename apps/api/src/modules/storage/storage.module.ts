@@ -2,6 +2,11 @@ import { Global, Module } from '@nestjs/common';
 import { AppConfig } from '../../config/app-config.js';
 import { MediaController } from './media.controller.js';
 import { LocalObjectStorage, ObjectStorage, SupabaseObjectStorage } from './object-storage.js';
+import {
+  LocalPrivateDocumentStore,
+  PrivateDocumentStore,
+  SupabasePrivateDocumentStore,
+} from './private-documents.js';
 
 @Global()
 @Module({
@@ -19,7 +24,23 @@ import { LocalObjectStorage, ObjectStorage, SupabaseObjectStorage } from './obje
         return new LocalObjectStorage(localDirectory);
       },
     },
+    {
+      provide: PrivateDocumentStore,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): PrivateDocumentStore => {
+        const { driver, localDirectory, privateBucket, supabaseUrl, supabaseServiceRoleKey } =
+          config.storage;
+        if (driver === 'supabase' && supabaseUrl && supabaseServiceRoleKey) {
+          return new SupabasePrivateDocumentStore(
+            supabaseUrl,
+            supabaseServiceRoleKey,
+            privateBucket,
+          );
+        }
+        return new LocalPrivateDocumentStore(localDirectory);
+      },
+    },
   ],
-  exports: [ObjectStorage],
+  exports: [ObjectStorage, PrivateDocumentStore],
 })
 export class StorageModule {}

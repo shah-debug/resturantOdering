@@ -11,6 +11,7 @@ import { PrismaService } from '../../database/prisma.service.js';
 import { MembershipRole, MembershipStatus } from '../../generated/prisma/enums.js';
 import { organizationNotFound } from '../access/organization-access.guard.js';
 import { AuditAction, AuditService } from '../audit/audit.service.js';
+import { startSubscription } from '../billing/subscription-factory.js';
 import type { AuthContext, RequestMeta } from '../auth/http/request-context.js';
 import type { CreateOrganizationDto, UpdateOrganizationDto } from './dto/organization.dto.js';
 import { organizationSelect, toOrganization } from './organization.mappers.js';
@@ -46,6 +47,30 @@ export class OrganizationsService {
           data: { name: dto.name, slug: dto.slug },
           select: organizationSelect,
         });
+        const defaultPlan = await tx.plan.findFirst({ where: { isDefault: true, isActive: true } });
+        if (defaultPlan && defaultPlan.trialDays > 0) {
+          const now = new Date();
+          const trial = await startSubscription(tx, {
+            organizationId: organization.id,
+            timezone: organization.timezone,
+            plan: defaultPlan,
+            status: 'TRIALING',
+            trialDays: defaultPlan.trialDays,
+            now,
+          });
+          await this.audit.record(
+            {
+              action: AuditAction.BillingTrialStarted,
+              actorUserId: auth.user.id,
+              organizationId: organization.id,
+              entityType: 'subscription',
+              entityId: trial.id,
+              changes: { plan: defaultPlan.code, trialDays: defaultPlan.trialDays },
+              meta,
+            },
+            tx,
+          );
+        }
         await tx.membership.create({
           data: {
             organizationId: organization.id,

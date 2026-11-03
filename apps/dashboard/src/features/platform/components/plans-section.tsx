@@ -1,10 +1,11 @@
 'use client';
 
-import { createPlanRequestSchema, formatRupees } from '@app/contracts';
+import { createPlanRequestSchema, formatRupees, type Plan } from '@app/contracts';
 import { getErrorMessage, getFieldErrors } from '@app/web/api';
 import { Alert, Badge, Button, Field, Input, Select } from '@app/web/ui';
 import { type FormEvent, useState } from 'react';
 import { useCreatePlanMutation, useListPlansQuery } from '../platform-api';
+import { limitText, PlanEditDialog } from './plan-edit-dialog';
 import { usePlatformRole } from './platform-shell';
 
 interface PlanForm {
@@ -30,6 +31,7 @@ export function PlansSection() {
   const [form, setForm] = useState<PlanForm>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Plan | null>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -154,25 +156,38 @@ export function PlansSection() {
       ) : (
         <ul className="grid gap-2">
           {plans.data?.map((plan) => (
-            <li
-              key={plan.id}
-              className="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-4 py-3 text-sm"
-            >
-              <span className="font-medium">{plan.name}</span>
-              <span className="text-muted-foreground">{plan.code}</span>
-              <span className="tabular-nums">
-                {formatRupees(plan.priceMinor)} /{' '}
-                {plan.billingInterval === 'MONTHLY' ? 'month' : 'year'}
-              </span>
-              {plan.isActive ? null : <Badge variant="secondary">Inactive</Badge>}
-              <span className="ml-auto text-muted-foreground">
-                {plan.activeSubscriptions} current subscription
-                {plan.activeSubscriptions === 1 ? '' : 's'}
+            <li key={plan.id} className="grid gap-1 rounded-lg border bg-card px-4 py-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{plan.name}</span>
+                <span className="text-muted-foreground">{plan.code}</span>
+                <span className="tabular-nums">
+                  {formatRupees(plan.priceMinor)} /{' '}
+                  {plan.billingInterval === 'MONTHLY' ? 'month' : 'year'}
+                </span>
+                {plan.isDefault ? <Badge>Default for new restaurants</Badge> : null}
+                {plan.isActive ? null : <Badge variant="secondary">Inactive</Badge>}
+                <span className="ml-auto text-muted-foreground">
+                  {plan.activeSubscriptions} current subscription
+                  {plan.activeSubscriptions === 1 ? '' : 's'}
+                </span>
+                {role === 'SUPER_ADMIN' ? (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(plan)}>
+                    Edit
+                  </Button>
+                ) : null}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {limitText(plan.maxBranches, 'branch', 'branches')} ·{' '}
+                {limitText(plan.maxProducts, 'menu item', 'menu items')} ·{' '}
+                {limitText(plan.maxRiders, 'rider', 'riders')} ·{' '}
+                {limitText(plan.maxMembers, 'team member', 'team members')} · {plan.trialDays}-day
+                trial · {plan.graceDays}-day grace period
               </span>
             </li>
           ))}
         </ul>
       )}
+      {editing ? <PlanEditDialog plan={editing} onClose={() => setEditing(null)} /> : null}
     </section>
   );
 }

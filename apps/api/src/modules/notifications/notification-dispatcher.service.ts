@@ -6,9 +6,11 @@ import {
 } from '@nestjs/common';
 import { formatRupees } from '@app/contracts';
 import { z } from 'zod';
+import { ErrorReporter } from '../../common/observability/error-reporter.js';
 import { AppConfig } from '../../config/app-config.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Mailer, type MailMessage } from '../mail/mailer.js';
+import { isBillingTemplate, renderBillingEmail } from '../billing/billing-notifications.js';
 import { NotificationTemplate } from './notification-outbox.js';
 
 export const MAX_NOTIFICATION_ATTEMPTS = 5;
@@ -50,12 +52,13 @@ export interface DispatchResult {
 export class NotificationDispatcher implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(NotificationDispatcher.name);
   private timer: NodeJS.Timeout | null = null;
-  private running = false;
+  private inFlight: Promise<void> | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailer: Mailer,
     private readonly config: AppConfig,
+    private readonly errors: ErrorReporter,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -66,26 +69,26 @@ export class NotificationDispatcher implements OnApplicationBootstrap, OnModuleD
     }
   }
 
-  onModuleDestroy(): void {
+  async onModuleDestroy(): Promise<void> {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
     }
+    await this.inFlight;
   }
 
-  private async tick(): Promise<void> {
-    if (this.running) {
-      return;
-    }
-    this.running = true;
+  private tick(): Promise<void> {
+    this.inFlight ??= this.work().finally(() => {
+      this.inFlight = null;
+    });
+    return this.inFlight;
+  }
+
+  private async work(): Promise<void> {
     try {
       await this.dispatchDue();
     } catch (error) {
-      this.logger.error(
-        `Notification dispatch failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    } finally {
-      this.running = false;
+      this.errors.report(error, { source: 'worker', task: 'notification-dispatch' });
     }
   }
 
@@ -146,6 +149,14 @@ export class NotificationDispatcher implements OnApplicationBootstrap, OnModuleD
   }
 
   private render(notification: ClaimedNotification): MailMessage {
+    if (isBillingTemplate(notification.template)) {
+      return renderBillingEmail(
+        notification.template,
+        notification.recipient,
+        notification.payload,
+        `${this.config.dashboardUrl}/organizations/${notification.organization_id}/billing`,
+      );
+    }
     if (notification.template !== NotificationTemplate.OrderPlacedStaff) {
       throw new UnknownTemplateError(`Unknown notification template ${notification.template}`);
     }

@@ -1,0 +1,91 @@
+enum SubscriptionInvoiceStatus {
+  OPEN
+  PAID
+  VOID
+
+  @@map("subscription_invoice_status")
+}
+
+enum SubscriptionPaymentMethod {
+  BANK_TRANSFER
+  JAZZCASH
+  EASYPAISA
+  CASH
+  OTHER
+
+  @@map("subscription_payment_method")
+}
+
+enum SubscriptionPaymentStatus {
+  SUBMITTED
+  VERIFIED
+  REJECTED
+
+  @@map("subscription_payment_status")
+}
+
+model SubscriptionInvoice {
+  id             String                    @id @default(uuid(7)) @db.Uuid
+  organizationId String                    @map("organization_id") @db.Uuid
+  subscriptionId String                    @map("subscription_id") @db.Uuid
+  number         String                    @unique @default(dbgenerated("('INV-'::text || lpad((nextval('subscription_invoice_number_seq'::regclass))::text, 6, '0'::text))")) @db.VarChar(32)
+  periodStart    DateTime                  @map("period_start") @db.Timestamptz(3)
+  periodEnd      DateTime                  @map("period_end") @db.Timestamptz(3)
+  amountMinor    Int                       @map("amount_minor")
+  currency       String                    @default("PKR") @db.Char(3)
+  status         SubscriptionInvoiceStatus @default(OPEN)
+  dueAt          DateTime                  @map("due_at") @db.Timestamptz(3)
+  paidAt         DateTime?                 @map("paid_at") @db.Timestamptz(3)
+  voidedAt       DateTime?                 @map("voided_at") @db.Timestamptz(3)
+  createdAt      DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  subscription Subscription          @relation(fields: [organizationId, subscriptionId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  payments     SubscriptionPayment[]
+
+  @@unique([organizationId, id])
+  @@unique([subscriptionId, periodStart])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([status, dueAt])
+  @@map("subscription_invoices")
+}
+
+model SubscriptionPayment {
+  id                  String                    @id @default(uuid(7)) @db.Uuid
+  organizationId      String                    @map("organization_id") @db.Uuid
+  invoiceId           String                    @map("invoice_id") @db.Uuid
+  method              SubscriptionPaymentMethod
+  provider            String                    @default("manual") @db.VarChar(32)
+  providerEventId     String?                   @map("provider_event_id") @db.VarChar(128)
+  amountMinor         Int                       @map("amount_minor")
+  currency            String                    @default("PKR") @db.Char(3)
+  reference           String                    @db.VarChar(64)
+  referenceKey        String                    @map("reference_key") @db.VarChar(64)
+  paidOn              DateTime                  @map("paid_on") @db.Date
+  note                String?                   @db.VarChar(500)
+  evidenceKey         String?                   @map("evidence_key") @db.VarChar(160)
+  evidenceContentType String?                   @map("evidence_content_type") @db.VarChar(40)
+  status              SubscriptionPaymentStatus @default(SUBMITTED)
+  submittedByUserId   String?                   @map("submitted_by_user_id") @db.Uuid
+  submittedAt         DateTime                  @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  reviewedByUserId    String?                   @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt          DateTime?                 @map("reviewed_at") @db.Timestamptz(3)
+  rejectionReason     String?                   @map("rejection_reason") @db.VarChar(500)
+  createdAt           DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  invoice      SubscriptionInvoice @relation(fields: [organizationId, invoiceId], references: [organizationId, id], onDelete: Restrict, onUpdate: Restrict)
+  submittedBy  User?               @relation("SubscriptionPaymentSubmitter", fields: [submittedByUserId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+  reviewedBy   User?               @relation("SubscriptionPaymentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@unique([method, referenceKey], where: raw("status <> 'REJECTED'"), map: "subscription_payments_reference_key")
+  @@unique([provider, providerEventId])
+  @@index([organizationId, submittedAt(sort: Desc)])
+  @@index([status, submittedAt])
+  @@index([organizationId, invoiceId])
+  @@index([submittedByUserId])
+  @@index([reviewedByUserId])
+  @@map("subscription_payments")
+}

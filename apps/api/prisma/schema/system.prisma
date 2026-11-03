@@ -68,5 +68,6 @@ model AuditLog {
   @@index([organizationId, createdAt(sort: Desc)])
   @@index([organizationId, entityType, entityId])
   @@index([actorUserId])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@map("audit_logs")
 }

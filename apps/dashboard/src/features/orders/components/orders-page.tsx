@@ -11,25 +11,17 @@ import {
 import { Badge, Button, Field, Input, Select, Skeleton } from '@app/web/ui';
 import { Bike, ChefHat, Inbox, Search, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { EmptyState, ErrorState, isUnavailableError, UnavailableState } from '@/components/states';
 import { useListBranchesQuery } from '@/features/restaurant/restaurant-api';
 import { useDebouncedValue } from '@/lib/use-debounced-value';
+import { useNow } from '@/lib/use-now';
 import { useFallbackPolling } from '../live-orders';
 import { formatAge, STATUS_LABELS, statusVariant } from '../order-labels';
 import { useGetOrderCountsQuery, useListOrdersQuery } from '../orders-api';
 import { TransitionControls } from './transition-controls';
 
 export const ORDERS_PAGE_SIZE = 20;
-
-export function useNow(intervalMs = 30_000): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(timer);
-  }, [intervalMs]);
-  return now;
-}
 
 function OrderRow({
   organizationId,

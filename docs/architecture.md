@@ -22,7 +22,7 @@ Staff browser ─────► dashboard (Next.js) ─────────
 ## Request path and security boundaries
 
 - Browsers only talk to the Next.js apps. Each app rewrites `/api/*` to the API, so authentication cookies are first-party and HTTP-only. Tokens are never stored in `localStorage`.
-- The API must only be reachable through those proxies (or a trusted load balancer). It derives the client IP from `X-Forwarded-For` according to `TRUST_PROXY_HOPS`, and rate limits per client IP.
+- The API must only be reachable through those apps. The Next.js rewrite passes `X-Forwarded-For` through unchanged and does **not** add the visitor's address, so an edge proxy or load balancer in front of the apps must set it. The API takes the client IP from `X-Forwarded-For` according to `TRUST_PROXY_HOPS` and rate limits per client IP. See [operations.md](operations.md#client-ip-addresses).
 - Every page response carries a nonce-based Content Security Policy.
 - The API returns one error envelope (`ApiErrorResponse` in `packages/contracts`) for every failure. 5xx responses never expose internal messages.
 
@@ -60,16 +60,18 @@ Tenant isolation is a security requirement, enforced in layers:
 
 ## Delivery phases
 
-| Phase | Scope                                                                               | State |
-| ----- | ----------------------------------------------------------------------------------- | ----- |
-| 0     | Monorepo, tooling, CI, security headers, CSP, rate limiting                         | Done  |
-| 1     | Supabase + Prisma foundation, schema, migrations, seed, readiness                   | Done  |
-| 2     | Staff authentication (HTTP-only cookie sessions, CSRF), RBAC, organization access   | Done  |
-| 3     | Dashboard shell, onboarding, organization and branch settings                       | Done  |
-| 4     | Menu management (see [menu.md](menu.md))                                            | Done  |
-| 5     | Storefront: public menu and cart (see [storefront.md](storefront.md))               | Done  |
-| 6     | Guest checkout and order placement (see [checkout.md](checkout.md))                 | Done  |
-| 7     | Order operations, kitchen, riders and live updates (see [orders.md](orders.md))     | Done  |
-| 8     | Riders and delivery                                                                 |       |
-| 9     | Online payments and notifications                                                   |       |
-| 10    | Reports and platform admin (see [reports-and-platform.md](reports-and-platform.md)) | Done  |
+| Phase | Scope                                                                                                                              | State |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| 0     | Monorepo, tooling, CI, security headers, CSP, rate limiting                                                                        | Done  |
+| 1     | Supabase + Prisma foundation, schema, migrations, seed, readiness                                                                  | Done  |
+| 2     | Staff authentication (HTTP-only cookie sessions, CSRF), RBAC, organization access                                                  | Done  |
+| 3     | Dashboard shell, onboarding, organization and branch settings                                                                      | Done  |
+| 4     | Menu management (see [menu.md](menu.md))                                                                                           | Done  |
+| 5     | Storefront: public menu and cart (see [storefront.md](storefront.md))                                                              | Done  |
+| 6     | Guest checkout and order placement (see [checkout.md](checkout.md))                                                                | Done  |
+| 7     | Order operations, kitchen, riders and live updates (see [orders.md](orders.md))                                                    | Done  |
+| 8     | Riders and delivery                                                                                                                |       |
+| 9     | Online payments and notifications                                                                                                  |       |
+| 10    | Reports and platform admin (see [reports-and-platform.md](reports-and-platform.md))                                                | Done  |
+| 11    | SaaS plans, trials, subscriptions and manual billing (see [billing.md](billing.md))                                                | Done  |
+| 12    | Production-readiness audit (see [production-readiness-audit.md](production-readiness-audit.md) and [operations.md](operations.md)) | Done  |

@@ -10,6 +10,7 @@ import {
 import { AppException } from '../../common/errors/app.exception.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { Prisma } from '../../generated/prisma/client.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import { DEFAULT_DELIVERY_ZONE_NAME } from '../branches/branch.mapper.js';
 import {
   publishedOrganization,
@@ -77,7 +78,10 @@ function restaurantNotFound(): AppException {
 
 @Injectable()
 export class StorefrontService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly entitlements: EntitlementsService,
+  ) {}
 
   async directory(): Promise<StorefrontDirectoryEntry[]> {
     const rows = await this.prisma.organization.findMany({
@@ -149,6 +153,7 @@ export class StorefrontService {
       primaryColor: profile.primaryColor?.trim() ?? null,
       branches: branches.map(toBranch),
       categories: menu,
+      onlineOrdering: await this.entitlements.canTakeOrders(organizationId),
     };
   }
 }

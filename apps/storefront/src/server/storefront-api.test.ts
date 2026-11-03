@@ -1,7 +1,12 @@
 import { jsonResponse } from '@app/web/testing';
 import { vi } from 'vitest';
 import { storefrontFixture } from '@/testing/storefront-fixture';
-import { getStorefront, listStorefronts, StorefrontApiError } from './storefront-api';
+import {
+  getOrderTracking,
+  getStorefront,
+  listStorefronts,
+  StorefrontApiError,
+} from './storefront-api';
 
 function stubFetch(response: Response) {
   const fetchMock = vi.fn<typeof fetch>(() => Promise.resolve(response));
@@ -46,5 +51,32 @@ describe('storefront data access', () => {
     await expect(listStorefronts()).resolves.toEqual([
       { slug: 'karahi-house', updatedAt: '2026-10-30T10:00:00.000Z' },
     ]);
+  });
+
+  it('forwards the visitor address and the token when tracking an order', async () => {
+    const fetchMock = stubFetch(jsonResponse({}, 404));
+    const orderId = '018f0000-0000-7000-8000-000000000999';
+    const token = 'A'.repeat(43);
+    await expect(
+      getOrderTracking('karahi-house', orderId, token, '203.0.113.7, 10.0.0.2'),
+    ).resolves.toBeNull();
+    const [, init] = fetchMock.mock.calls[0] ?? [];
+    expect(init?.headers).toMatchObject({
+      'X-Order-Token': token,
+      'X-Forwarded-For': '203.0.113.7, 10.0.0.2',
+    });
+    expect(init).toMatchObject({ cache: 'no-store' });
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('drops a malformed forwarded address and never calls the API for a bad token', async () => {
+    const fetchMock = stubFetch(jsonResponse({}, 404));
+    const orderId = '018f0000-0000-7000-8000-000000000999';
+    await getOrderTracking('karahi-house', orderId, 'A'.repeat(43), '203.0.113.7;X-Admin=1');
+    const [, init] = fetchMock.mock.calls[0] ?? [];
+    expect(init?.headers).not.toHaveProperty('X-Forwarded-For');
+    fetchMock.mockClear();
+    await expect(getOrderTracking('karahi-house', orderId, 'short')).resolves.toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -42,4 +42,13 @@ describe('HealthController', () => {
     expect(status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
     expect(readinessResponseSchema.parse(body)).toMatchObject({ status: 'unavailable' });
   });
+
+  it('reports unavailable once shutdown has started so traffic drains away', async () => {
+    const controller = await createController({ status: 'up', latencyMs: 1 });
+    controller.onModuleDestroy();
+    const { response, status } = fakeResponse();
+    const body = await controller.ready(response);
+    expect(status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+    expect(readinessResponseSchema.parse(body)).toMatchObject({ status: 'unavailable' });
+  });
 });

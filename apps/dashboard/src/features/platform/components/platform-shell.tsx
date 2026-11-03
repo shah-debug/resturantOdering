@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, Building2, ScrollText, ShieldCheck } from 'lucide-react';
+import { Activity, Building2, Receipt, ScrollText, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { EmptyState } from '@/components/states';
@@ -11,6 +11,7 @@ import { TopBar } from '@/components/shell/top-bar';
 const ITEMS: NavItem[] = [
   { href: '/platform', label: 'Overview', icon: Activity, exact: true },
   { href: '/platform/restaurants', label: 'Restaurants', icon: Building2 },
+  { href: '/platform/billing', label: 'Payments', icon: Receipt },
   { href: '/platform/audit', label: 'Audit log', icon: ScrollText },
 ];
 

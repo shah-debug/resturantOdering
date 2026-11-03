@@ -133,7 +133,7 @@ export async function evaluateCheckout(
   db: Db,
   organization: CheckoutOrganization,
   input: CheckoutInput,
-  options: { now: Date; lock: boolean; customerPhone?: string },
+  options: { now: Date; lock: boolean; acceptingOrders: boolean; customerPhone?: string },
 ): Promise<CheckoutEvaluation> {
   const issues: CheckoutIssue[] = [];
   if (options.lock) {
@@ -221,7 +221,7 @@ export async function evaluateCheckout(
       opensAt: minutesToTime(interval.opensAtMinutes),
       closesAt: minutesToTime(interval.closesAtMinutes),
     }));
-    if (!branch.isAcceptingOrders) {
+    if (!branch.isAcceptingOrders || !options.acceptingOrders) {
       issues.push(
         issue('STORE_CLOSED', 'branchId', 'This restaurant is not taking online orders right now'),
       );
