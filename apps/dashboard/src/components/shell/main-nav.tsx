@@ -41,14 +41,17 @@ export function MainNav({
                 aria-current={active ? 'page' : undefined}
                 onClick={onNavigate}
                 className={cn(
-                  'flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  'relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200',
                   'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                   active
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+                    ? 'bg-accent text-accent-foreground before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full before:bg-primary'
+                    : 'text-muted-foreground hover:translate-x-0.5 hover:bg-accent/60 hover:text-foreground',
                 )}
               >
-                <Icon className="size-4 shrink-0" aria-hidden="true" />
+                <Icon
+                  className={cn('size-4 shrink-0', active ? 'text-primary' : '')}
+                  aria-hidden="true"
+                />
                 <span className="flex-1 truncate">{item.label}</span>
                 {item.badge ? (
                   <Badge variant="secondary" className="tabular-nums">

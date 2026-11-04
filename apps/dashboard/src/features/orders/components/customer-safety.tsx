@@ -55,7 +55,7 @@ export function CustomerSafety({
   return (
     <div className="grid gap-2">
       {order.customerOrderCount <= 1 && !order.customerBlocked ? (
-        <Alert title="First order from this number">
+        <Alert variant="warning" title="First order from this number">
           Call the customer to confirm before you start cooking.
         </Alert>
       ) : null}

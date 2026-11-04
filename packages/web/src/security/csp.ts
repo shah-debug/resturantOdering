@@ -24,7 +24,7 @@ export function buildContentSecurityPolicy({
       "'strict-dynamic'",
       ...(isDevelopment ? ["'unsafe-eval'"] : []),
     ],
-    'style-src': ["'self'", `'nonce-${nonce}'`],
+    'style-src': isDevelopment ? ["'self'", "'unsafe-inline'"] : ["'self'", `'nonce-${nonce}'`],
     'img-src': ["'self'", 'blob:', 'data:', ...imgSources],
     'font-src': ["'self'"],
     'connect-src': ["'self'", ...connectSources],

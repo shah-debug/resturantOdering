@@ -6,7 +6,10 @@ export function Skeleton({ className, ...props }: ComponentProps<'div'>) {
     <div
       data-slot="skeleton"
       aria-hidden="true"
-      className={cn('animate-pulse rounded-md bg-muted', className)}
+      className={cn(
+        'animate-shimmer rounded-md bg-[linear-gradient(90deg,var(--muted)_25%,color-mix(in_oklch,var(--muted),var(--background)_60%)_50%,var(--muted)_75%)] bg-[length:200%_100%]',
+        className,
+      )}
       {...props}
     />
   );

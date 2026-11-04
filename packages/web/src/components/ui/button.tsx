@@ -5,7 +5,7 @@ import { cn } from '../../lib/cn';
 
 const buttonVariantsConfig = cva(
   [
-    'inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors',
+    'inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.97]',
     'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
     'disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50',
     "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -13,8 +13,9 @@ const buttonVariantsConfig = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
-        outline: 'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
+        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-md',
+        outline:
+          'border bg-card shadow-xs hover:border-primary/40 hover:bg-accent hover:text-accent-foreground',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         destructive: 'bg-destructive text-white shadow-xs hover:bg-destructive/90',
         ghost: 'hover:bg-accent hover:text-accent-foreground',

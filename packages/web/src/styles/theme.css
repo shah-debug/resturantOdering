@@ -27,30 +27,99 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --shadow-card: 0 1px 2px oklch(0.2 0.02 40 / 6%), 0 4px 16px -4px oklch(0.2 0.02 40 / 8%);
+  --shadow-lift: 0 2px 4px oklch(0.2 0.02 40 / 6%), 0 12px 32px -8px oklch(0.2 0.02 40 / 18%);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in: fade-in 240ms var(--ease-out-expo) both;
+  --animate-fade-in-up: fade-in-up 480ms var(--ease-out-expo) both;
+  --animate-scale-in: scale-in 220ms var(--ease-out-expo) both;
+  --animate-slide-in-right: slide-in-right 320ms var(--ease-out-expo) both;
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-pop: pop 360ms var(--ease-out-expo) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+  @keyframes pop {
+    0% {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.12);
+      opacity: 1;
+    }
+    100% {
+      transform: none;
+    }
+  }
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --radius: 0.75rem;
+  --background: oklch(0.988 0.004 75);
+  --foreground: oklch(0.2 0.015 50);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.2 0.015 50);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.2 0.015 50);
+  --primary: oklch(0.6 0.19 38);
+  --primary-foreground: oklch(0.99 0.005 75);
+  --secondary: oklch(0.96 0.008 70);
+  --secondary-foreground: oklch(0.25 0.02 50);
+  --muted: oklch(0.965 0.006 75);
+  --muted-foreground: oklch(0.5 0.015 55);
+  --accent: oklch(0.955 0.025 50);
+  --accent-foreground: oklch(0.3 0.06 40);
   --destructive: oklch(0.577 0.245 27.325);
   --success: oklch(0.6 0.15 150);
   --warning: oklch(0.75 0.15 70);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.91 0.01 70);
+  --input: oklch(0.88 0.012 70);
+  --ring: oklch(0.6 0.19 38);
 }
 
 .dark {
@@ -60,8 +129,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.7 0.17 42);
+  --primary-foreground: oklch(0.18 0.02 40);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -73,7 +142,7 @@
   --warning: oklch(0.8 0.15 75);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.7 0.17 42);
 }
 
 @layer base {
@@ -82,5 +151,42 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  ::selection {
+    background: oklch(0.6 0.19 38 / 22%);
+  }
+}
+
+@layer utilities {
+  .stagger > * {
+    animation: var(--animate-fade-in-up);
+  }
+  .stagger > *:nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .stagger > *:nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .stagger > *:nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .stagger > *:nth-child(5) {
+    animation-delay: 160ms;
+  }
+  .stagger > *:nth-child(n + 6) {
+    animation-delay: 200ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

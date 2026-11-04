@@ -31,6 +31,15 @@ describe('buildContentSecurityPolicy', () => {
     expect(directive(policy, 'script-src')).toContain("'unsafe-eval'");
   });
 
+  it('lets the development error overlay style itself, but keeps production styles nonce-only', () => {
+    expect(directive(buildContentSecurityPolicy({ nonce, isDevelopment: true }), 'style-src')).toBe(
+      "style-src 'self' 'unsafe-inline'",
+    );
+    expect(
+      directive(buildContentSecurityPolicy({ nonce, isDevelopment: false }), 'style-src'),
+    ).toBe("style-src 'self' 'nonce-abc123'");
+  });
+
   it('blocks framing, plugins and foreign form targets', () => {
     const policy = buildContentSecurityPolicy({ nonce, isDevelopment: false });
     expect(directive(policy, 'frame-ancestors')).toBe("frame-ancestors 'none'");

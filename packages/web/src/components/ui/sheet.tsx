@@ -29,7 +29,10 @@ export function SheetOverlay({
   return (
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
-      className={cn('fixed inset-0 z-50 bg-black/50', className)}
+      className={cn(
+        'fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] data-[state=open]:animate-fade-in',
+        className,
+      )}
       {...props}
     />
   );
@@ -42,8 +45,9 @@ const sheetVariants = cva(
       side: {
         top: 'inset-x-0 top-0 h-auto border-b',
         bottom: 'inset-x-0 bottom-0 h-auto border-t',
-        left: 'inset-y-0 left-0 h-full w-3/4 max-w-xs border-r',
-        right: 'inset-y-0 right-0 h-full w-3/4 max-w-sm border-l',
+        left: 'inset-y-0 left-0 h-full w-3/4 max-w-xs border-r data-[state=open]:animate-fade-in',
+        right:
+          'inset-y-0 right-0 h-full w-3/4 max-w-sm border-l data-[state=open]:animate-slide-in-right',
       },
     },
     defaultVariants: { side: 'right' },

@@ -155,19 +155,23 @@ export function OnboardingWizard({
   return (
     <div className="grid gap-6">
       <header className="grid gap-1">
-        <p className="text-sm font-medium text-muted-foreground">Restaurant setup</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Set up {organization.name}</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm font-semibold tracking-wide text-primary uppercase">
+          Restaurant setup
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Set up {organization.name}
+        </h1>
+        <p className="max-w-2xl text-sm text-muted-foreground">
           Each step is saved as you go, so you can leave and pick up where you left off.
         </p>
       </header>
       <SetupProgress steps={onboarding.steps} current={current} organizationId={organizationId} />
-      <Card>
-        <CardHeader>
+      <Card key={current} className="animate-fade-in-up overflow-hidden">
+        <CardHeader className="border-b bg-muted/40">
           <h2 className="text-xl font-semibold tracking-tight">{STEP_META[current].label}</h2>
           <CardDescription>{STEP_META[current].description}</CardDescription>
         </CardHeader>
-        <CardContent>{body}</CardContent>
+        <CardContent className="pt-4 sm:pt-6">{body}</CardContent>
       </Card>
     </div>
   );

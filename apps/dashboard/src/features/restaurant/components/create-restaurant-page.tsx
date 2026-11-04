@@ -12,21 +12,23 @@ export function CreateRestaurantPage() {
   return (
     <div className="grid gap-6">
       <header className="grid gap-1">
-        <p className="text-sm font-medium text-muted-foreground">Restaurant setup</p>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <p className="text-sm font-semibold tracking-wide text-primary uppercase">
+          Restaurant setup
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Let&apos;s get you ready for orders
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="max-w-2xl text-sm text-muted-foreground">
           It takes a few minutes. Each step is saved, so you can finish later.
         </p>
       </header>
       <SetupProgress steps={EMPTY_STEPS} current="restaurant" />
-      <Card>
-        <CardHeader>
+      <Card className="animate-fade-in-up overflow-hidden">
+        <CardHeader className="border-b bg-muted/40">
           <h2 className="text-xl font-semibold tracking-tight">{STEP_META.restaurant.label}</h2>
           <CardDescription>{STEP_META.restaurant.description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4 sm:pt-6">
           <CreateRestaurantForm />
         </CardContent>
       </Card>
